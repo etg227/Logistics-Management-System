@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | CargoFlow{% endblock %}
+
+{% block content %}
+
+<div class="login-wrapper">
+    <div class="login-card">
+
+        <div class="eyebrow">
+            CARGOFLOW / EMPLOYEE ACCESS
+        </div>
+
+        <h1>Welcome back</h1>
+
+        <p class="muted">
+            Sign in to manage your logistics operations.
+        </p>
+
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.email.label(class="form-label") }}
+
+                {{ form.email(
+                    class="form-control",
+                    placeholder="you@example.com",
+                    autocomplete="username"
+                ) }}
+
+                {% for error in form.email.errors %}
+                    <p class="field-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label(class="form-label") }}
+
+                {{ form.password(
+                    class="form-control",
+                    placeholder="Enter your password",
+                    autocomplete="current-password"
+                ) }}
+
+                {% for error in form.password.errors %}
+                    <p class="field-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {{ form.submit(class="btn btn-primary btn-full") }}
+        </form>
+
+        <p class="login-note">
+            Contact your administrator to obtain an account.
+        </p>
+
+    </div>
+</div>
+
+{% endblock %}

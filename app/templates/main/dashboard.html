@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | CargoFlow{% endblock %}
+
+{% block content %}
+
+<section class="page-heading">
+    <div>
+        <div class="eyebrow">OPERATIONS OVERVIEW</div>
+        <h1>Dashboard</h1>
+        <p class="muted">
+            Welcome back, {{ current_user.full_name }}.
+        </p>
+    </div>
+
+    <span class="stage-label">Stage 1</span>
+</section>
+
+<section class="stats-grid">
+
+    <div class="card stat-card">
+        <span class="stat-title">Total Shipments</span>
+        <strong class="stat-value">—</strong>
+        <span class="stat-note">Available in Stage 2</span>
+    </div>
+
+    <div class="card stat-card">
+        <span class="stat-title">Pending</span>
+        <strong class="stat-value">—</strong>
+        <span class="stat-note">Available in Stage 2</span>
+    </div>
+
+    <div class="card stat-card">
+        <span class="stat-title">In Transit</span>
+        <strong class="stat-value">—</strong>
+        <span class="stat-note">Available in Stage 2</span>
+    </div>
+
+    <div class="card stat-card">
+        <span class="stat-title">Delivered</span>
+        <strong class="stat-value">—</strong>
+        <span class="stat-note">Available in Stage 2</span>
+    </div>
+
+</section>
+
+<section class="content-grid">
+
+    <div class="card">
+        <h2>System Overview</h2>
+
+        <p class="muted">
+            The authentication and database foundation is ready.
+            Shipment management will be added in Stage 2.
+        </p>
+
+        {% if current_user.role == "admin" %}
+            <a class="btn btn-primary"
+               href="{{ url_for('main.admin') }}">
+                Open Administration
+            </a>
+        {% elif current_user.role == "driver" %}
+            <a class="btn btn-primary"
+               href="{{ url_for('main.driver') }}">
+                Open Driver Portal
+            </a>
+        {% else %}
+            <span class="status-tag">
+                Staff Access Enabled
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Your Account</h2>
+
+        <p class="muted">Signed in as</p>
+        <p><strong>{{ current_user.full_name }}</strong></p>
+        <p>{{ current_user.email }}</p>
+
+        <span class="status-tag">
+            {{ current_user.role|capitalize }}
+        </span>
+    </div>
+
+</section>
+
+{% endblock %}
