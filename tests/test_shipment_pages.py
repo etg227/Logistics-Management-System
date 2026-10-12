@@ -72,7 +72,7 @@ def test_assigned_driver_detail_renders(app, client):
     _login(client, "driver")
     response = client.get(f"/shipments/{shipment_id}")
     assert response.status_code == 200
-    assert b"Update Delivery Status" in response.data
+    assert b"Confirm Pickup" in response.data
     assert b"Status History" in response.data
 
 

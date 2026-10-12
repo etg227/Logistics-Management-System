@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Delivery Task | CargoFlow{% endblock %}
+{% block content %}
+<div class="page-trail"><a href="{{ url_for('shipments.index') }}">My Deliveries</a><span aria-hidden="true">/</span><span>Task details</span></div>
+<section class="task-header">
+  <div><span class="eyebrow">DELIVERY TASK</span><h1 class="tracking-id">{{ shipment.tracking_number }}</h1><span class="status-tag status-{{ shipment.status|replace('_', '-') }}">{{ shipment.status_label }}</span></div>
+  <span class="task-attempt">Attempt {{ shipment.delivery_attempts or 0 }}</span>
+</section>
+<div class="task-layout">
+  <div class="task-primary">
+    <section class="card task-destination">
+      <div class="section-heading"><h2>Delivery address</h2><span class="quiet-label">Recipient</span></div>
+      <p class="destination-address">{{ shipment.destination }}</p>
+      <div class="recipient-strip"><strong>{{ shipment.recipient_name }}</strong><a href="tel:{{ shipment.recipient_phone|replace(' ', '') }}">{{ shipment.recipient_phone }}</a></div>
+      {% if shipment.delivery_instructions %}<div class="instructions-note"><strong>Delivery instructions</strong><p>{{ shipment.delivery_instructions }}</p></div>{% endif %}
+    </section>
+    <section class="card task-outcome" aria-label="Current delivery action">
+      {% if shipment.status == 'out_for_delivery' %}
+        <h2>Delivery outcome</h2>
+        <p class="muted concise">Select what happened on this delivery attempt.</p>
+        <div class="outcome-options">
+          <a class="outcome-action outcome-success" href="{{ url_for('shipments.confirm_delivery_page', shipment_id=shipment.id) }}"><span class="outcome-symbol" aria-hidden="true">✓</span><span><strong>Delivered successfully</strong><small>Record recipient confirmation</small></span><span aria-hidden="true">→</span></a>
+          <a class="outcome-action outcome-failure" href="{{ url_for('shipments.report_failure_page', shipment_id=shipment.id) }}"><span class="outcome-symbol" aria-hidden="true">!</span><span><strong>Unable to deliver</strong><small>Report an issue to operations</small></span><span aria-hidden="true">→</span></a>
+        </div>
+      {% elif next_status %}
+        <h2>Next action</h2>
+        <form action="{{ url_for('shipments.advance', shipment_id=shipment.id) }}" method="POST" class="next-action-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="status" value="{{ next_status }}">
+          <details class="optional-details"><summary>Add location (optional)</summary><label class="form-label" for="progress_location">Location / hub</label><input id="progress_location" class="form-control" name="location" maxlength="120" placeholder="Current hub or area"></details>
+          <button type="submit" class="btn btn-primary btn-action">{{ {'picked_up':'Confirm Pickup','in_transit':'Mark In Transit','out_for_delivery':'Start Delivery Attempt'}.get(next_status, 'Continue Delivery') }} <span aria-hidden="true">→</span></button>
+        </form>
+      {% elif shipment.status == 'delivery_failed' %}
+        <h2>Waiting for operations</h2><p class="muted concise">This delivery issue has been sent to staff for review.</p>
+      {% elif shipment.status == 'delivered' %}
+        <h2>Delivery completed</h2><p class="muted concise">Signed for by {{ shipment.received_by or 'recipient' }}.</p>
+      {% else %}
+        <h2>Task closed</h2><p class="muted concise">No further action is available.</p>
+      {% endif %}
+    </section>
+    <section class="card task-history"><h2>Status History</h2><ol class="product-timeline">{% for event in shipment.events|reverse %}<li><div><strong>{{ event.status_label }}</strong><small>{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</small>{% if event.location %}<p class="muted">{{ event.location }}</p>{% endif %}</div></li>{% endfor %}</ol></section>
+  </div>
+  <aside class="task-secondary"><section class="card task-facts"><h2>Package</h2><dl class="compact-details"><dt>Pickup</dt><dd>{{ shipment.origin }}</dd><dt>Type</dt><dd>{{ shipment.package_type_label }}</dd><dt>Weight</dt><dd>{{ '%.2f'|format(shipment.weight_kg) }} kg</dd><dt>Expected</dt><dd>{{ shipment.expected_delivery_date.isoformat() if shipment.expected_delivery_date else 'Not scheduled' }}</dd></dl></section></aside>
+</div>
+{% endblock %}

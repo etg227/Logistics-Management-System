@@ -3,10 +3,9 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Shipment
-from app.models.shipment import (
-    PENDING, ASSIGNED, PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED,
-)
+from app.models.shipment import ASSIGNED, DELIVERY_FAILED, IN_TRANSIT, OUT_FOR_DELIVERY, PENDING, PICKED_UP
 from app.permissions import roles_required
+from app.services.analytics import dashboard_data
 
 main_bp = Blueprint("main", __name__)
 
@@ -21,25 +20,25 @@ def index():
 @main_bp.get("/dashboard")
 @login_required
 def dashboard():
-    scope = []
+    data = dashboard_data(current_user)
+    data.update(driver_tasks=[], unassigned=[], unassigned_count=0)
     if current_user.role == "driver":
-        scope.append(Shipment.driver_id == current_user.id)
-
-    def count(*extra):
-        stmt = db.select(db.func.count(Shipment.id)).where(*scope, *extra)
-        return db.session.scalar(stmt) or 0
-
-    stats = {
-        "total": count(),
-        "pending": count(Shipment.status.in_([PENDING, ASSIGNED])),
-        "in_transit": count(Shipment.status.in_([PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY])),
-        "delivered": count(Shipment.status == DELIVERED),
-    }
-    recent = db.session.scalars(
-        db.select(Shipment).where(*scope)
-        .order_by(Shipment.created_at.desc(), Shipment.id.desc()).limit(5)
-    ).all()
-    return render_template("main/dashboard.html", stats=stats, recent=recent)
+        data["driver_tasks"] = db.session.scalars(
+            db.select(Shipment)
+            .where(Shipment.driver_id == current_user.id,
+                   Shipment.status.in_((ASSIGNED, PICKED_UP, IN_TRANSIT,
+                                        OUT_FOR_DELIVERY, DELIVERY_FAILED)))
+            .order_by(Shipment.updated_at.desc(), Shipment.id.desc()).limit(12)
+        ).all()
+    elif current_user.role == "staff":
+        condition = (Shipment.status == PENDING) & Shipment.driver_id.is_(None)
+        data["unassigned_count"] = db.session.scalar(
+            db.select(db.func.count(Shipment.id)).where(condition)) or 0
+        data["unassigned"] = db.session.scalars(
+            db.select(Shipment).where(condition)
+            .order_by(Shipment.created_at.asc(), Shipment.id.asc()).limit(6)
+        ).all()
+    return render_template("main/dashboard.html", **data)
 
 
 @main_bp.get("/admin")

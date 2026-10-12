@@ -39,8 +39,9 @@ def create_app(test_config=None):
     from app.blueprints.shipments import shipments_bp
     from app.blueprints.tracking import tracking_bp
     from app.blueprints.admin_users import admin_users_bp
+    from app.blueprints.reports import reports_bp
 
-    for blueprint in (auth_bp, main_bp, customers_bp, shipments_bp, tracking_bp, admin_users_bp):
+    for blueprint in (auth_bp, main_bp, customers_bp, shipments_bp, tracking_bp, admin_users_bp, reports_bp):
         app.register_blueprint(blueprint)
 
     @login_manager.user_loader

@@ -1,52 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}CargoFlow{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/stage2.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_users.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/shipment_improvements.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CargoFlow{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/stage2.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_users.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shipment_improvements.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/product_ui.css') }}">
 </head>
-<body>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="logo" href="{{ url_for('main.index') }}">
-  CargoFlow <span class="logo-subtitle">LMS</span>
-</a>
-    <nav class="main-nav" aria-label="Main navigation">
-      <a href="{{ url_for('tracking.index') }}">Track Package</a>
-      {% if current_user.is_authenticated %}
-        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-        {% if current_user.role in ['admin', 'staff'] %}
-          <a href="{{ url_for('customers.index') }}">Customers</a>
-        {% endif %}
-        {% if current_user.role == 'admin' %}<a href="{{ url_for('admin_users.index') }}">Users</a>{% endif %}
-        <a href="{{ url_for('shipments.index') }}">{{ 'My Deliveries' if current_user.role == 'driver' else 'Shipments' }}</a>
+<body class="{{ 'app-authenticated' if current_user.is_authenticated else 'app-public' }}">
+{% if current_user.is_authenticated %}
+<div class="app-shell">
+  <aside class="app-sidebar" aria-label="Application sidebar">
+    <a class="product-brand" href="{{ url_for('main.dashboard') }}"><span class="brand-mark" aria-hidden="true">C</span><span>CargoFlow</span></a>
+    <div class="workspace-label">WORKSPACE</div>
+    <nav class="sidebar-nav" aria-label="Main navigation">
+      <a class="nav-link {% if request.endpoint == 'main.dashboard' %}is-active{% endif %}" href="{{ url_for('main.dashboard') }}"><span class="nav-icon" aria-hidden="true">▦</span> Dashboard</a>
+      <a class="nav-link {% if request.blueprint == 'shipments' %}is-active{% endif %}" href="{{ url_for('shipments.index') }}"><span class="nav-icon" aria-hidden="true">▣</span> {{ 'My Deliveries' if current_user.role == 'driver' else 'Shipments' }}</a>
+      {% if current_user.role in ['admin', 'staff'] %}
+        <a class="nav-link {% if request.blueprint == 'customers' %}is-active{% endif %}" href="{{ url_for('customers.index') }}"><span class="nav-icon" aria-hidden="true">♧</span> Customers</a>
+        <a class="nav-link {% if request.blueprint == 'reports' %}is-active{% endif %}" href="{{ url_for('reports.index') }}"><span class="nav-icon" aria-hidden="true">▤</span> Reports</a>
+      {% endif %}
+      {% if current_user.role == 'admin' %}
+        <a class="nav-link {% if request.blueprint == 'admin_users' %}is-active{% endif %}" href="{{ url_for('admin_users.index') }}"><span class="nav-icon" aria-hidden="true">♙</span> Users</a>
       {% endif %}
     </nav>
-    {% if current_user.is_authenticated %}
-      <div class="user-menu">
-        <span class="user-info">{{ current_user.full_name }} <span class="role-label">{{ current_user.role|capitalize }}</span></span>
-        <form action="{{ url_for('auth.logout') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn btn-outline">Sign out</button>
-        </form>
-      </div>
-    {% else %}
-      <a class="btn btn-outline" href="{{ url_for('auth.login') }}">Employee Login</a>
-    {% endif %}
-  </div>
-</header>
-<main class="container">
+    <div class="sidebar-bottom">
+      <a class="nav-link subtle-link" href="{{ url_for('tracking.index') }}">Track a parcel <span aria-hidden="true">↗</span></a>
+      <div class="account-summary"><span class="avatar-initial">{{ current_user.full_name[:1]|upper }}</span><span class="account-text"><strong>{{ current_user.full_name }}</strong><small>{{ current_user.role|capitalize }}</small></span></div>
+      <form method="POST" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="signout-link">Sign out</button></form>
+    </div>
+  </aside>
+  <div class="app-main">
+    <header class="app-mobile-header"><a class="product-brand" href="{{ url_for('main.dashboard') }}"><span class="brand-mark" aria-hidden="true">C</span> CargoFlow</a><form method="POST" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="mobile-signout">Sign out</button></form></header>
+{% else %}
+<header class="public-header"><a class="product-brand" href="{{ url_for('tracking.index') }}"><span class="brand-mark" aria-hidden="true">C</span> CargoFlow</a><nav aria-label="Public navigation"><a href="{{ url_for('tracking.index') }}">Track shipment</a><a href="{{ url_for('auth.login') }}">Employee sign in</a></nav></header>
+{% endif %}
+<main class="{{ 'app-content' if current_user.is_authenticated else 'public-content' }}" id="main-content">
   {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-    {% endfor %}
+    {% for category, message in messages %}<div class="alert alert-{{ category }}" role="status">{{ message }}</div>{% endfor %}
   {% endwith %}
   {% block content %}{% endblock %}
 </main>
-<footer class="footer">CargoFlow Logistics Management System</footer>
+{% if current_user.is_authenticated %}</div></div>{% endif %}
 </body>
 </html>

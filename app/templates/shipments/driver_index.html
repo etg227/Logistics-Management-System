@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}My Deliveries | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading product-heading"><div><span class="eyebrow">MY WORK</span><h1>My Deliveries</h1></div></section>
+<div class="delivery-list-layout">
+  <form class="card delivery-filters" method="GET">
+    <label class="sr-only" for="q">Search deliveries</label><input id="q" class="form-control" name="q" value="{{ q }}" placeholder="Search tracking number or recipient">
+    <label class="sr-only" for="status">Delivery status</label><select id="status" name="status" class="form-control"><option value="">All statuses</option>{% for key, label in statuses.items() %}<option value="{{ key }}" {% if key == status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <button class="btn btn-primary" type="submit">Filter</button>
+  </form>
+  <div class="delivery-task-list">
+    {% for s in pagination.items %}
+      <a class="card delivery-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}"><div class="list-item-top"><span class="mono tracking-label">{{ s.tracking_number }}</span><span class="status-tag status-{{ s.status|replace('_','-') }}">{{ s.status_label }}</span></div><strong class="list-item-recipient">{{ s.recipient_name }}</strong><span class="muted list-item-destination">{{ s.destination }}</span><div class="list-item-bottom"><span>Attempt {{ s.delivery_attempts or 0 }}</span><span aria-hidden="true">View task →</span></div></a>
+    {% else %}<div class="card empty-panel"><h2>No deliveries found</h2><p class="muted">Your assigned deliveries will appear here.</p></div>{% endfor %}
+  </div>
+  {% if pagination.pages > 1 %}<nav class="pager" aria-label="Delivery pages"><span>Page {{ pagination.page }} of {{ pagination.pages }}</span>{% if pagination.has_prev %}<a href="{{ url_for('shipments.index', page=pagination.prev_num, q=q, status=status) }}">Previous</a>{% endif %}{% if pagination.has_next %}<a href="{{ url_for('shipments.index', page=pagination.next_num, q=q, status=status) }}">Next</a>{% endif %}</nav>{% endif %}
+</div>
+{% endblock %}

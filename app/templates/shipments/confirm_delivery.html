@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Confirm Delivery | CargoFlow{% endblock %}
+{% block content %}
+<div class="flow-page">
+  <a class="text-back" href="{{ url_for('shipments.detail', shipment_id=shipment.id) }}">← Back to task</a>
+  <section class="flow-heading"><span class="eyebrow">DELIVERY OUTCOME</span><h1>Confirm delivery</h1><p class="muted">{{ shipment.recipient_name }} · {{ shipment.destination }}</p></section>
+  <form class="card flow-form" method="POST" action="{{ url_for('shipments.advance', shipment_id=shipment.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="status" value="delivered">
+    <div class="flow-success-icon" aria-hidden="true">✓</div>
+    <div class="form-group"><label class="form-label" for="received_by">Received by <span class="required-mark">*</span></label><input autofocus required class="form-control" id="received_by" name="received_by" maxlength="120" placeholder="Name of person who received the parcel"></div>
+    <div class="form-group"><label class="form-label" for="delivery_note">Delivery note <span class="quiet-label">Optional</span></label><textarea id="delivery_note" name="delivery_note" class="form-control" maxlength="300" rows="3" placeholder="e.g. Handed to reception"></textarea></div>
+    <div class="form-group"><label class="form-label" for="delivery_location">Location <span class="quiet-label">Optional</span></label><input id="delivery_location" name="location" class="form-control" maxlength="120" placeholder="Delivery area"></div>
+    <button type="submit" class="btn btn-primary btn-action btn-full">Confirm successful delivery</button>
+  </form>
+</div>
+{% endblock %}

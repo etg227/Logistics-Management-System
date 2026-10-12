@@ -1,27 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | CargoFlow{% endblock %}
+{% block title %}Overview | CargoFlow{% endblock %}
 {% block content %}
-<section class="page-heading">
-  <div><div class="eyebrow">OPERATIONS OVERVIEW</div><h1>Dashboard</h1>
-    <p class="muted">Welcome back, {{ current_user.full_name }}.</p>
-  </div>
-  <a class="btn btn-primary" href="{{ url_for('shipments.index') }}">View Shipments</a>
-</section>
-<section class="stats-grid">
-  <div class="card stat-card"><span class="stat-title">Total Shipments</span><strong class="stat-value">{{ stats.total }}</strong></div>
-  <div class="card stat-card"><span class="stat-title">Awaiting Pickup</span><strong class="stat-value">{{ stats.pending }}</strong></div>
-  <div class="card stat-card"><span class="stat-title">In Progress</span><strong class="stat-value">{{ stats.in_transit }}</strong></div>
-  <div class="card stat-card"><span class="stat-title">Delivered</span><strong class="stat-value">{{ stats.delivered }}</strong></div>
-</section>
-<section class="card">
-  <div class="page-heading compact"><h2>Recent Shipments</h2>
-  {% if current_user.role in ['admin', 'staff'] %}<a class="btn btn-primary" href="{{ url_for('shipments.create') }}">+ New Shipment</a>{% endif %}</div>
-  {% if recent %}
-    <div class="table-scroll"><table class="data-table"><thead><tr><th>Tracking</th><th>Recipient</th><th>Status</th><th>Action</th></tr></thead>
-    <tbody>{% for s in recent %}<tr>
-      <td>{{ s.tracking_number }}</td><td>{{ s.recipient_name }}</td><td><span class="status-tag">{{ s.status_label }}</span></td>
-      <td><a class="table-link" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">View</a></td>
-    </tr>{% endfor %}</tbody></table></div>
-  {% else %}<p class="muted">No shipments yet. Create one to get started.</p>{% endif %}
-</section>
+{% if current_user.role == 'driver' %}
+  <section class="product-heading"><span class="eyebrow">MY WORK</span><h1>Today's workspace</h1><p class="muted">Only your assigned shipments are shown.</p></section>
+  <section class="product-kpis driver-kpis"><div class="card product-kpi"><span>Active tasks</span><strong>{{ stats.active }}</strong></div><div class="card product-kpi"><span>Completed</span><strong>{{ stats.delivered }}</strong></div><div class="card product-kpi"><span>Needs review</span><strong>{{ stats.failed }}</strong></div></section>
+  <section class="card dashboard-queue"><div class="panel-head"><h2>My delivery tasks</h2><a class="table-link" href="{{ url_for('shipments.index') }}">All deliveries →</a></div>
+    {% if driver_tasks %}<div class="dashboard-list">{% for s in driver_tasks %}<a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}"><div><strong>{{ s.recipient_name }}</strong><span class="muted">{{ s.destination }}</span><small class="mono">{{ s.tracking_number }}</small></div><span class="status-tag status-{{ s.status|replace('_','-') }}">{{ s.status_label }}</span></a>{% endfor %}</div>
+    {% else %}<p class="muted">No active deliveries assigned.</p>{% endif %}
+  </section>
+{% elif current_user.role == 'staff' %}
+  <section class="page-heading product-heading"><div><span class="eyebrow">OPERATIONS</span><h1>Operations overview</h1></div><a class="btn btn-primary" href="{{ url_for('shipments.create') }}">New Shipment</a></section>
+  <section class="product-kpis"><a class="card product-kpi interactive-kpi" href="{{ url_for('shipments.index', status='pending') }}"><span>Awaiting assignment</span><strong>{{ unassigned_count }}</strong><small>Unassigned shipments</small></a><a class="card product-kpi interactive-kpi {% if stats.failed %}is-critical{% endif %}" href="{{ url_for('shipments.index', status='delivery_failed') }}"><span>Requires Attention</span><strong>{{ stats.failed }}</strong><small>Failed deliveries awaiting review</small></a><div class="card product-kpi"><span>Active deliveries</span><strong>{{ stats.active }}</strong></div><div class="card product-kpi"><span>Delivered</span><strong>{{ stats.delivered }}</strong></div></section>
+  <div class="product-dashboard-grid"><section class="card dashboard-queue"><div class="panel-head"><h2>Requires Attention</h2><a class="table-link" href="{{ url_for('shipments.index', status='delivery_failed') }}">All failures →</a></div>
+    {% if attention %}<div class="dashboard-list">{% for s in attention %}<a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}"><div><strong>{{ s.recipient_name }}</strong><span class="muted">{{ s.tracking_number }}</span></div><span class="status-tag status-delivery-failed">Delivery Failed</span></a>{% endfor %}</div>{% else %}<p class="muted">No delivery issues awaiting review.</p>{% endif %}
+  </section><section class="card dashboard-queue"><div class="panel-head"><h2>Unassigned Shipments</h2><a class="table-link" href="{{ url_for('shipments.index', status='pending') }}">All pending →</a></div>{% if unassigned %}<div class="dashboard-list">{% for s in unassigned %}<a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}"><div><strong>{{ s.recipient_name }}</strong><span class="muted">{{ s.tracking_number }}</span></div><span class="subtle-arrow" aria-hidden="true">→</span></a>{% endfor %}</div>{% else %}<p class="muted">No shipments waiting for assignment.</p>{% endif %}</section></div>
+  <section class="card analytics-panel section-gap"><div class="panel-head"><h2>Recent Shipments</h2><a class="table-link" href="{{ url_for('shipments.index') }}">See all →</a></div>{% if recent %}<div class="table-scroll"><table class="data-table"><thead><tr><th>Tracking</th><th>Recipient</th><th>Status</th></tr></thead><tbody>{% for s in recent %}<tr><td><a class="table-link mono" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">{{ s.tracking_number }}</a></td><td>{{ s.recipient_name }}</td><td><span class="status-tag status-{{ s.status|replace('_','-') }}">{{ s.status_label }}</span></td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="muted">No shipments yet.</p>{% endif %}</section>
+{% else %}
+  <section class="page-heading product-heading"><div><span class="eyebrow">MANAGEMENT</span><h1>Business overview</h1></div><a class="btn btn-outline" href="{{ url_for('reports.index') }}">View Reports</a></section>
+  <section class="product-kpis"><div class="card product-kpi"><span>Total Shipments</span><strong>{{ stats.total }}</strong></div><div class="card product-kpi"><span>Delivery Success Rate</span><strong>{{ '%.1f%%'|format(stats.success_rate) if stats.success_rate is not none else 'N/A' }}</strong></div><div class="card product-kpi"><span>Active deliveries</span><strong>{{ stats.active }}</strong></div><a class="card product-kpi interactive-kpi {% if stats.failed %}is-critical{% endif %}" href="{{ url_for('shipments.index', status='delivery_failed') }}"><span>Needs Staff Review</span><strong>{{ stats.failed }}</strong></a></section>
+  <div class="product-dashboard-grid"><section class="card analytics-panel"><h2>Daily Shipment Trend</h2><div class="analytics-chart" role="img" aria-label="Shipments created in the last 14 UTC days">{% for day in daily %}<div class="analytics-day" title="{{ day.date }}: {{ day.count }}"><span class="analytics-day-count">{{ day.count }}</span><div class="analytics-bar-rail"><i style="height:{{ day.height }}%"></i></div><span class="analytics-day-label">{{ day.date[8:] }}</span></div>{% endfor %}</div></section><section class="card analytics-panel"><h2>Status Distribution</h2><div class="analytics-status-list">{% for row in distribution %}{% if row.count %}<div class="analytics-status-row"><span>{{ row.label }}</span><div class="analytics-meter"><i style="width:{{ row.width }}%"></i></div><strong>{{ row.count }}</strong></div>{% endif %}{% endfor %}</div>{% if stats.total == 0 %}<p class="muted">No shipments recorded.</p>{% endif %}</section></div>
+  <div class="product-dashboard-grid">  <section class="card analytics-panel"><div class="panel-head"><h2>Requires Attention</h2><a class="table-link" href="{{ url_for('shipments.index', status='delivery_failed') }}">See all →</a></div>{% if attention %}<div class="dashboard-list">{% for s in attention %}<a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}"><div><strong>{{ s.recipient_name }}</strong><span class="muted mono">{{ s.tracking_number }}</span></div><span class="status-tag status-delivery-failed">Failed</span></a>{% endfor %}</div>{% else %}<p class="muted">No unresolved delivery issues.</p>{% endif %}</section><section class="card analytics-panel"><div class="panel-head"><h2>Driver Workload</h2></div>{% if workload %}<div class="table-scroll"><table class="data-table"><thead><tr><th>Driver</th><th>Active</th><th>Delivered</th></tr></thead><tbody>{% for d in workload %}<tr><td>{{ d.name }}</td><td>{{ d.active }}</td><td>{{ d.delivered }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="muted">No drivers yet.</p>{% endif %}</section>
+</div>
+  <section class="card analytics-panel section-gap"><div class="panel-head"><h2>Recent Shipments</h2><a class="table-link" href="{{ url_for('shipments.index') }}">See all →</a></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Tracking</th><th>Recipient</th><th>Status</th></tr></thead><tbody>{% for s in recent %}<tr><td><a class="table-link mono" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">{{ s.tracking_number }}</a></td><td>{{ s.recipient_name }}</td><td>{{ s.status_label }}</td></tr>{% else %}<tr><td colspan="3">No shipments yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}
 {% endblock %}

@@ -101,6 +101,9 @@ def index():
     if current_user.role in ("admin", "staff"):
         drivers = db.session.scalars(db.select(User).where(User.role == "driver")
                                      .order_by(User.full_name)).all()
+    if current_user.role == "driver":
+        return render_template("shipments/driver_index.html", pagination=pagination,
+                               statuses=STATUS_LABELS, q=q, status=status)
     return render_template(
         "shipments/index.html", pagination=pagination, statuses=STATUS_LABELS,
         q=q, status=status, from_date=from_date, to_date=to_date,
@@ -139,11 +142,35 @@ def detail(shipment_id):
             db.select(User).where(User.role == "driver", User.is_active.is_(True))
             .order_by(User.full_name)
         ).all()
+    if current_user.role == "driver":
+        return render_template("shipments/driver_detail.html", shipment=shipment,
+                               next_status=DRIVER_NEXT_STATUS.get(shipment.status))
     return render_template(
         "shipments/detail.html", shipment=shipment, drivers=drivers,
         next_status=DRIVER_NEXT_STATUS.get(shipment.status), statuses=STATUS_LABELS,
         failure_reasons=FAILURE_REASONS,
     )
+
+
+@shipments_bp.get("/<int:shipment_id>/confirm-delivery")
+@login_required
+@roles_required("driver")
+def confirm_delivery_page(shipment_id):
+    shipment = _shipment_or_404(shipment_id)
+    if shipment.status != OUT_FOR_DELIVERY:
+        abort(404)
+    return render_template("shipments/confirm_delivery.html", shipment=shipment)
+
+
+@shipments_bp.get("/<int:shipment_id>/report-failure")
+@login_required
+@roles_required("driver")
+def report_failure_page(shipment_id):
+    shipment = _shipment_or_404(shipment_id)
+    if shipment.status != OUT_FOR_DELIVERY:
+        abort(404)
+    return render_template("shipments/report_failure.html", shipment=shipment,
+                           failure_reasons=FAILURE_REASONS)
 
 
 @shipments_bp.route("/<int:shipment_id>/edit", methods=["GET", "POST"])
@@ -194,13 +221,20 @@ def assign(shipment_id):
 def advance(shipment_id):
     shipment = _shipment_or_404(shipment_id)
     try:
+        requested_status = request.form.get("status", "")
         advance_delivery(
-            shipment, request.form.get("status", ""), current_user.id,
+            shipment, requested_status, current_user.id,
             location=request.form.get("location", ""),
             received_by=request.form.get("received_by", ""),
             delivery_note=request.form.get("delivery_note", ""),
         )
-        flash("Delivery status updated.", "success")
+        status_messages = {
+            "picked_up": "Pickup confirmed.",
+            "in_transit": "Shipment marked in transit.",
+            "out_for_delivery": "Delivery attempt started.",
+            "delivered": "Delivery confirmed.",
+        }
+        flash(status_messages.get(requested_status, "Delivery updated."), "success")
     except WorkflowError as exc:
         flash(str(exc), "danger")
     return redirect(url_for("shipments.detail", shipment_id=shipment.id))
@@ -218,7 +252,7 @@ def fail(shipment_id):
             note=request.form.get("note", ""),
             location=request.form.get("location", ""),
         )
-        flash("Delivery failure recorded. Staff must review this shipment.", "warning")
+        flash("Delivery failed. Staff must review this shipment.", "warning")
     except WorkflowError as exc:
         flash(str(exc), "danger")
     return redirect(url_for("shipments.detail", shipment_id=shipment.id))

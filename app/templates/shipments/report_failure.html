@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Report Delivery Issue | CargoFlow{% endblock %}
+{% block content %}
+<div class="flow-page">
+  <a class="text-back" href="{{ url_for('shipments.detail', shipment_id=shipment.id) }}">← Back to task</a>
+  <section class="flow-heading"><span class="eyebrow">DELIVERY OUTCOME</span><h1>Report delivery issue</h1><p class="muted">{{ shipment.recipient_name }} · {{ shipment.destination }}</p></section>
+  <form class="card flow-form" method="POST" action="{{ url_for('shipments.fail', shipment_id=shipment.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="flow-failure-icon" aria-hidden="true">!</div>
+    <div class="form-group"><label class="form-label" for="failure_reason">Reason <span class="required-mark">*</span></label><select required id="failure_reason" name="reason" class="form-control"><option value="">Select a reason</option>{% for value, label in failure_reasons.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label class="form-label" for="failure_note">Details <span class="quiet-label">Required for Other</span></label><textarea id="failure_note" name="note" class="form-control" maxlength="160" rows="3" placeholder="What happened?"></textarea></div>
+    <div class="form-group"><label class="form-label" for="failure_location">Location <span class="quiet-label">Optional</span></label><input id="failure_location" name="location" class="form-control" maxlength="120" placeholder="Where did the issue happen?"></div>
+    <button type="submit" class="btn btn-danger btn-action btn-full">Submit delivery issue</button>
+  </form>
+</div>
+{% endblock %}
