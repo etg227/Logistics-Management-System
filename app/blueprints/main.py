@@ -46,7 +46,7 @@ def dashboard():
 @login_required
 @roles_required("admin")
 def admin():
-    return render_template("main/role_page.html", title="Administration", role="Admin")
+    return render_template("admin/overview.html")
 
 
 @main_bp.get("/driver")

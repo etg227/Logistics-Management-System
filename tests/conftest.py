@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 
 from app import create_app
 from app.extensions import db
@@ -29,8 +29,9 @@ def app():
 
         db.session.commit()
 
-        yield application
+    yield application
 
+    with application.app_context():
         db.session.remove()
         db.drop_all()
 

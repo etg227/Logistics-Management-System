@@ -6,6 +6,7 @@
     <title>{% block title %}CargoFlow{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/stage2.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_users.css') }}">
 </head>
 <body>
 <header class="topbar">
@@ -20,6 +21,7 @@
         {% if current_user.role in ['admin', 'staff'] %}
           <a href="{{ url_for('customers.index') }}">Customers</a>
         {% endif %}
+        {% if current_user.role == 'admin' %}<a href="{{ url_for('admin_users.index') }}">Users</a>{% endif %}
         <a href="{{ url_for('shipments.index') }}">{{ 'My Deliveries' if current_user.role == 'driver' else 'Shipments' }}</a>
       {% endif %}
     </nav>

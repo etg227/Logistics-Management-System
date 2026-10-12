@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ user.full_name }} | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><div class="eyebrow">USER ACCOUNT</div><h1>{{ user.full_name }}</h1>
+    <span class="status-tag {% if not user.is_active %}muted-tag{% endif %}">{{ 'Active' if user.is_active else 'Inactive' }}</span></div>
+  <a class="btn btn-outline" href="{{ url_for('admin_users.index') }}">Back to Users</a>
+</section>
+<div class="content-grid">
+  <section class="card">
+    <h2>User Details</h2>
+    <dl class="info-grid">
+      <dt>User ID</dt><dd>{{ user.id }}</dd>
+      <dt>Name</dt><dd>{{ user.full_name }}</dd>
+      <dt>Email</dt><dd>{{ user.email }}</dd>
+      <dt>Role</dt><dd>{{ user.role|capitalize }}</dd>
+      <dt>Account</dt><dd>{{ 'Active' if user.is_active else 'Inactive' }}</dd>
+      <dt>Created</dt><dd>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }} UTC</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Account Actions</h2>
+    <div class="user-actions">
+      <a class="btn btn-primary" href="{{ url_for('admin_users.edit', user_id=user.id) }}">Edit User</a>
+      <a class="btn btn-outline" href="{{ url_for('admin_users.reset_password', user_id=user.id) }}">Reset Password</a>
+      <form method="POST" action="{{ url_for('admin_users.toggle', user_id=user.id) }}"
+            onsubmit="return confirm('Change this account status?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline">{{ 'Disable Account' if user.is_active else 'Enable Account' }}</button>
+      </form>
+    </div>
+    <p class="muted small user-help">User accounts are disabled instead of deleted so delivery records remain intact.</p>
+  </section>
+</div>
+{% endblock %}

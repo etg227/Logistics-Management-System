@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">ADMINISTRATION</div><h1>{{ title }}</h1></div>
+  <a class="btn btn-outline" href="{{ url_for('admin_users.index') }}">Back to Users</a>
+</section>
+<section class="card form-card">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    {% for field in [form.full_name, form.email, form.role] %}
+      <div class="form-group">
+        {{ field.label(class="form-label") }}
+        {{ field(class="form-control") }}
+        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    {% if creating %}
+      {% for field in [form.password, form.confirm_password] %}
+        <div class="form-group">
+          {{ field.label(class="form-label") }}
+          {{ field(class="form-control", autocomplete="new-password") }}
+          {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      <p class="muted small">Share the temporary password securely with the employee. It is not emailed automatically.</p>
+    {% endif %}
+    {{ form.submit(class="btn btn-primary") }}
+  </form>
+</section>
+{% endblock %}

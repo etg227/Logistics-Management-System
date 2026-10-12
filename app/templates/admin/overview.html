@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Administration | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><div class="eyebrow">ADMINISTRATION</div><h1>Administration</h1>
+    <p class="muted">Manage employee accounts and system access.</p></div>
+</section>
+<section class="card">
+  <span class="status-tag">Access Granted</span>
+  <h2>User Management</h2>
+  <p class="muted">Create accounts, change roles, enable or disable access, and reset passwords.</p>
+  <a class="btn btn-primary" href="{{ url_for('admin_users.index') }}">Manage Users</a>
+</section>
+{% endblock %}

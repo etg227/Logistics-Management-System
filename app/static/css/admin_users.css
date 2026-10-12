@@ -1,0 +1,5 @@
+.user-actions{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.user-actions form{margin:0}
+.user-help{margin-top:20px}
+.user-actions .btn{min-width:145px}
+@media(max-width:650px){.user-actions .btn{width:100%}.user-actions,.user-actions form{width:100%}}
