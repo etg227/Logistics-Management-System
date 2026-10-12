@@ -1,0 +1,121 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Customers | CargoFlow{% endblock %}
+
+{% block content %}
+
+<section class="page-heading">
+    <div>
+        <div class="eyebrow">CUSTOMER DIRECTORY</div>
+        <h1>Customers</h1>
+    </div>
+
+    <a class="btn btn-primary"
+       href="{{ url_for('customers.create') }}">
+        + New Customer
+    </a>
+</section>
+
+<div class="card">
+
+    <form class="filter-bar" method="GET"
+          action="{{ url_for('customers.index') }}">
+
+        <input
+            class="form-control"
+            type="search"
+            name="q"
+            value="{{ q }}"
+            placeholder="Search customers"
+        >
+
+        <button class="btn btn-primary" type="submit">
+            Search
+        </button>
+    </form>
+
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for customer in pagination.items %}
+                <tr>
+                    <td>{{ customer.name }}</td>
+                    <td>{{ customer.email or "-" }}</td>
+                    <td>{{ customer.phone }}</td>
+
+                    <td>
+                        {% if customer.active %}
+                            <span class="status-tag">Active</span>
+                        {% else %}
+                            <span class="status-tag muted-tag">Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="actions">
+                        <a class="table-link"
+                           href="{{ url_for('customers.edit', customer_id=customer.id) }}">
+                            Edit
+                        </a>
+
+                        <form method="POST"
+                              action="{{ url_for('customers.toggle', customer_id=customer.id) }}">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   value="{{ csrf_token() }}">
+
+                            {% if customer.active %}
+                                <button class="btn btn-outline btn-small"
+                                        type="submit">
+                                    Deactivate
+                                </button>
+                            {% else %}
+                                <button class="btn btn-outline btn-small"
+                                        type="submit">
+                                    Reactivate
+                                </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="5">No customers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pager">
+        <span class="muted">
+            Page {{ pagination.page }} of {{ pagination.pages or 1 }}
+        </span>
+
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('customers.index', page=pagination.prev_num, q=q) }}">
+            Previous
+        </a>
+        {% endif %}
+
+        {% if pagination.has_next %}
+        <a href="{{ url_for('customers.index', page=pagination.next_num, q=q) }}">
+            Next
+        </a>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

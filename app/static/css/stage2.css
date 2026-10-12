@@ -1,0 +1,39 @@
+.main-nav{display:flex;align-items:center;gap:17px;flex-wrap:wrap}
+.main-nav a{font-size:13px;font-weight:600;color:#43546d}
+.main-nav a:hover,.table-link{color:var(--primary)}
+.table-link{font-size:13px;font-weight:700}
+.section-gap{margin-top:20px}
+.page-heading.compact{margin-bottom:14px}
+.form-card{max-width:740px}
+.form-card .form-group{margin-bottom:20px}
+.form-card select,.filter-bar select{background:#fff}
+.form-card textarea{min-height:90px;resize:vertical}
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;align-items:center}
+.filter-bar .form-control{flex:1 1 220px;width:auto;min-width:0}
+.filter-bar select.form-control{flex:0 1 190px}
+.table-scroll{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+.data-table th{background:#f8faff;color:#586a83;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.data-table th,.data-table td{padding:14px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tbody tr:hover{background:#f8faff}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.actions form{margin:0}
+.btn-small{padding:6px 9px;font-size:12px}
+.muted-tag{background:#f1f3f5;color:#66758c}
+.pager{display:flex;gap:20px;align-items:center;padding-top:18px;font-size:13px}
+.pager a{color:var(--primary);font-weight:700}
+.info-grid{display:grid;grid-template-columns:110px 1fr;gap:12px;font-size:14px}
+.info-grid dt{font-weight:700;color:#66758c}
+.info-grid dd{margin:0;overflow-wrap:anywhere}
+.action-button{margin-top:12px}
+.small{font-size:12px}
+.mono{font-family:Consolas,monospace;overflow-wrap:anywhere}
+.tracking-heading{font-size:24px}
+.timeline{padding-left:22px}
+.timeline li{margin:0 0 18px;padding-left:5px}
+.timeline li p{font-size:13px;margin-top:6px}
+.tracking-search{max-width:780px}
+.tracking-search .filter-bar{margin-bottom:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:950px){.topbar-inner{flex-wrap:wrap}.main-nav{order:3;width:100%;padding-top:6px}}
+@media(max-width:560px){.info-grid{grid-template-columns:1fr;gap:3px}.info-grid dd{margin-bottom:9px}.page-heading{align-items:flex-start;flex-direction:column}.tracking-heading{font-size:20px}}

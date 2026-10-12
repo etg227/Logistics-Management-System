@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Shipments | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">LOGISTICS OPERATIONS</div><h1>{{ 'My Deliveries' if current_user.role == 'driver' else 'Shipments' }}</h1></div>
+  {% if current_user.role in ['admin', 'staff'] %}<a class="btn btn-primary" href="{{ url_for('shipments.create') }}">+ New Shipment</a>{% endif %}
+</section>
+<div class="card">
+  <form class="filter-bar" method="GET">
+    <label class="sr-only" for="q">Search shipments</label><input id="q" class="form-control" name="q" value="{{ q }}" placeholder="Tracking number or recipient">
+    <label class="sr-only" for="status">Status</label>
+    <select id="status" name="status" class="form-control"><option value="">All statuses</option>
+      {% for key, label in statuses.items() %}<option value="{{ key }}" {% if key == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select><button class="btn btn-primary">Filter</button>
+  </form>
+  <div class="table-scroll"><table class="data-table"><thead><tr><th>Tracking</th><th>Recipient</th><th>Driver</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>{% for s in pagination.items %}<tr>
+      <td><span class="mono">{{ s.tracking_number }}</span></td><td>{{ s.recipient_name }}</td>
+      <td>{{ s.driver.full_name if s.driver else 'Unassigned' }}</td><td><span class="status-tag">{{ s.status_label }}</span></td>
+      <td><a class="table-link" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">View</a></td>
+    </tr>{% else %}<tr><td colspan="5" class="muted">No shipments found.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="pager"><span class="muted">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</span>
+    {% if pagination.has_prev %}<a href="{{ url_for('shipments.index', page=pagination.prev_num, q=q, status=status) }}">鈫?Previous</a>{% endif %}
+    {% if pagination.has_next %}<a href="{{ url_for('shipments.index', page=pagination.next_num, q=q, status=status) }}">Next 鈫?/a>{% endif %}
+  </div>
+</div>
+{% endblock %}

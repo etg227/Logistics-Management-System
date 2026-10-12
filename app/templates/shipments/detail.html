@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ shipment.tracking_number }} | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div>
+    <div class="eyebrow">SHIPMENT DETAILS</div>
+    <h1 class="mono tracking-heading">{{ shipment.tracking_number }}</h1>
+    <span class="status-tag">{{ shipment.status_label }}</span>
+  </div>
+  <a class="btn btn-outline" href="{{ url_for('shipments.index') }}">Back to Shipments</a>
+</section>
+
+<div class="content-grid">
+  <section class="card">
+    <h2>Shipment Information</h2>
+    <dl class="info-grid">
+      <dt>Customer</dt><dd>{{ shipment.customer.name }}</dd>
+      <dt>Recipient</dt><dd>{{ shipment.recipient_name }} - {{ shipment.recipient_phone }}</dd>
+      <dt>Origin</dt><dd>{{ shipment.origin }}</dd>
+      <dt>Destination</dt><dd>{{ shipment.destination }}</dd>
+      <dt>Weight</dt><dd>{{ '%.2f'|format(shipment.weight_kg) }} kg</dd>
+      <dt>Contents</dt><dd>{{ shipment.description or 'None' }}</dd>
+      <dt>Driver</dt><dd>{{ shipment.driver.full_name if shipment.driver else 'Not assigned' }}</dd>
+    </dl>
+    {% if current_user.role in ['admin', 'staff'] and shipment.status == 'pending' %}
+      <a class="btn btn-outline" href="{{ url_for('shipments.edit', shipment_id=shipment.id) }}">Edit Details</a>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Operations</h2>
+    {% if current_user.role in ['admin', 'staff'] %}
+      {% if shipment.status in ['pending', 'assigned'] %}
+        <form method="POST" action="{{ url_for('shipments.assign', shipment_id=shipment.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="form-label" for="driver_id">Assign a driver</label>
+          <select class="form-control" id="driver_id" name="driver_id" required>
+            <option value="">Select driver</option>
+            {% for driver in drivers %}
+              <option value="{{ driver.id }}" {% if shipment.driver_id == driver.id %}selected{% endif %}>{{ driver.full_name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-primary action-button">Assign Driver</button>
+        </form>
+        <form method="POST" action="{{ url_for('shipments.cancel', shipment_id=shipment.id) }}" onsubmit="return confirm('Cancel this shipment?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-outline action-button">Cancel Shipment</button>
+        </form>
+      {% else %}
+        <p class="muted">No further dispatch actions are available.</p>
+      {% endif %}
+    {% elif current_user.role == 'driver' %}
+      {% if next_status %}
+        <form method="POST" action="{{ url_for('shipments.advance', shipment_id=shipment.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="status" value="{{ next_status }}">
+          <p class="muted">Next delivery status</p>
+          <p><strong>{{ statuses[next_status] }}</strong></p>
+          <button type="submit" class="btn btn-primary">Update Delivery Status</button>
+        </form>
+      {% else %}
+        <p class="muted">No further delivery action is available.</p>
+      {% endif %}
+    {% endif %}
+    <p class="small muted">Public lookup:
+      <a class="table-link" href="{{ url_for('tracking.index', q=shipment.tracking_number) }}">View tracking</a>
+    </p>
+  </section>
+</div>
+
+<section class="card section-gap">
+  <h2>Status History</h2>
+  <ol class="timeline">
+    {% for event in shipment.events|reverse %}
+      <li>
+        <strong>{{ event.status_label }}</strong>
+        <div class="muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+        <p>{{ event.note or '' }} - {{ event.changed_by.full_name }}</p>
+      </li>
+    {% else %}
+      <li>No updates yet.</li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

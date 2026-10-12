@@ -1,46 +1,57 @@
-# System Architecture
+# CargoFlow - Architecture and Requirements
 
-## Architecture Style
+## Architecture
 
-Layered Flask web application.
+- Presentation: Jinja2 templates, CSS and Flask-WTF forms.
+- Web controllers: Flask Blueprints (`auth`, `main`, `customers`, `shipments`, `tracking`).
+- Business rules: `app/services/shipment_service.py`.
+- Data persistence: Flask-SQLAlchemy models and Alembic migrations (SQLite).
+- Authentication: Flask-Login; login session and CSRF validation.
 
-## Presentation Layer
+## User roles and permissions
 
-Jinja2 templates and CSS.
+| Operation | Admin | Staff | Driver | Public |
+|---|---|---|---|---|
+| Dashboard | Yes | Yes | Yes (own shipments) | No |
+| Create and update customers | Yes | Yes | No | No |
+| Create and edit pending shipments | Yes | Yes | No | No |
+| Assign active drivers | Yes | Yes | No | No |
+| Cancel pre-pickup shipments | Yes | Yes | No | No |
+| See internal shipment details | Yes | Yes | Own deliveries only | No |
+| Advance assigned delivery | No | No | Own deliveries only | No |
+| View tracking status timeline | Yes | Yes | Yes | Yes (with tracking number) |
 
-## Application Layer
+## Core entities
 
-Flask Blueprints:
-- auth
-- main
+- `User`: sign-in credentials and role (`admin`, `staff`, `driver`).
+- `Customer`: sender details and active/inactive state.
+- `Shipment`: tracking number, sender, recipient, addresses, weight, assigned driver and current status.
+- `ShipmentEvent`: immutable event row generated on creation, assignment, status change or cancellation.
 
-## Business Logic
+Relationships: `Customer 1 -- n Shipment`, `User(driver) 1 -- n Shipment`, `Shipment 1 -- n ShipmentEvent`.
 
-- Login verification
-- Password hashing
-- Role-based permission checking
+## Delivery workflow
 
-## Data Layer
+`Pending -> Assigned -> Picked Up -> In Transit -> Out for Delivery -> Delivered`
 
-Flask-SQLAlchemy with SQLite.
+Only `Pending` and `Assigned` can become `Cancelled`; driver assignment and reassignment are only allowed before pickup. A driver can only advance the next valid state for an assigned shipment. Terminal shipments cannot be reopened.
 
-## User Roles
+## Functional requirements
 
-Admin, Staff, Driver.
+- FR01: Authenticated users can access role-specific pages.
+- FR02: Admin and Staff can maintain customer records without deleting associated shipment history.
+- FR03: Admin and Staff can create shipments with automatically generated unique tracking numbers.
+- FR04: Admin and Staff can edit shipment details while the status is Pending.
+- FR05: Admin and Staff can assign an active Driver before pickup.
+- FR06: Assigned Drivers can advance shipment status exactly one step at a time.
+- FR07: Every workflow transition records actor, status, timestamp and internal note.
+- FR08: The public tracking page shows status and timestamps but does not show customer or recipient personal details.
+- FR09: Shipment lists support server-side search, filters and pagination.
+- FR10: Dashboard totals reflect persistent database records and a driver's own assignments only.
 
-## Security Controls
+## Non-functional requirements
 
-- Password hashing
-- Session authentication
-- CSRF protection
-- Server-side authorization
-- No public administrator registration
-
-## Testing
-
-pytest with an isolated in-memory SQLite database.
-
-## Planned Evolution
-
-The application will be extended with customers,
-shipments, driver assignments and tracking events.
+- NFR01: All state-changing operations use POST forms with CSRF validation.
+- NFR02: Authorization is enforced in controllers and business rules, not only through hidden navigation links.
+- NFR03: Passwords are stored as password hashes; `.env` and SQLite databases are excluded from Git.
+- NFR04: Automated regression tests cover authentication, validation, permissions, workflow and tracking privacy.

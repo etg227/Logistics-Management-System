@@ -1,88 +1,27 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard | CargoFlow{% endblock %}
-
 {% block content %}
-
 <section class="page-heading">
-    <div>
-        <div class="eyebrow">OPERATIONS OVERVIEW</div>
-        <h1>Dashboard</h1>
-        <p class="muted">
-            Welcome back, {{ current_user.full_name }}.
-        </p>
-    </div>
-
-    <span class="stage-label">Stage 1</span>
+  <div><div class="eyebrow">OPERATIONS OVERVIEW</div><h1>Dashboard</h1>
+    <p class="muted">Welcome back, {{ current_user.full_name }}.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('shipments.index') }}">View Shipments</a>
 </section>
-
 <section class="stats-grid">
-
-    <div class="card stat-card">
-        <span class="stat-title">Total Shipments</span>
-        <strong class="stat-value">—</strong>
-        <span class="stat-note">Available in Stage 2</span>
-    </div>
-
-    <div class="card stat-card">
-        <span class="stat-title">Pending</span>
-        <strong class="stat-value">—</strong>
-        <span class="stat-note">Available in Stage 2</span>
-    </div>
-
-    <div class="card stat-card">
-        <span class="stat-title">In Transit</span>
-        <strong class="stat-value">—</strong>
-        <span class="stat-note">Available in Stage 2</span>
-    </div>
-
-    <div class="card stat-card">
-        <span class="stat-title">Delivered</span>
-        <strong class="stat-value">—</strong>
-        <span class="stat-note">Available in Stage 2</span>
-    </div>
-
+  <div class="card stat-card"><span class="stat-title">Total Shipments</span><strong class="stat-value">{{ stats.total }}</strong></div>
+  <div class="card stat-card"><span class="stat-title">Awaiting Pickup</span><strong class="stat-value">{{ stats.pending }}</strong></div>
+  <div class="card stat-card"><span class="stat-title">In Progress</span><strong class="stat-value">{{ stats.in_transit }}</strong></div>
+  <div class="card stat-card"><span class="stat-title">Delivered</span><strong class="stat-value">{{ stats.delivered }}</strong></div>
 </section>
-
-<section class="content-grid">
-
-    <div class="card">
-        <h2>System Overview</h2>
-
-        <p class="muted">
-            The authentication and database foundation is ready.
-            Shipment management will be added in Stage 2.
-        </p>
-
-        {% if current_user.role == "admin" %}
-            <a class="btn btn-primary"
-               href="{{ url_for('main.admin') }}">
-                Open Administration
-            </a>
-        {% elif current_user.role == "driver" %}
-            <a class="btn btn-primary"
-               href="{{ url_for('main.driver') }}">
-                Open Driver Portal
-            </a>
-        {% else %}
-            <span class="status-tag">
-                Staff Access Enabled
-            </span>
-        {% endif %}
-    </div>
-
-    <div class="card">
-        <h2>Your Account</h2>
-
-        <p class="muted">Signed in as</p>
-        <p><strong>{{ current_user.full_name }}</strong></p>
-        <p>{{ current_user.email }}</p>
-
-        <span class="status-tag">
-            {{ current_user.role|capitalize }}
-        </span>
-    </div>
-
+<section class="card">
+  <div class="page-heading compact"><h2>Recent Shipments</h2>
+  {% if current_user.role in ['admin', 'staff'] %}<a class="btn btn-primary" href="{{ url_for('shipments.create') }}">+ New Shipment</a>{% endif %}</div>
+  {% if recent %}
+    <div class="table-scroll"><table class="data-table"><thead><tr><th>Tracking</th><th>Recipient</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>{% for s in recent %}<tr>
+      <td>{{ s.tracking_number }}</td><td>{{ s.recipient_name }}</td><td><span class="status-tag">{{ s.status_label }}</span></td>
+      <td><a class="table-link" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">View</a></td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="muted">No shipments yet. Create one to get started.</p>{% endif %}
 </section>
-
 {% endblock %}
