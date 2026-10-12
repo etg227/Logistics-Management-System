@@ -1,0 +1,15 @@
+.shipment-form-card{max-width:960px}
+.shipment-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.shipment-form-grid .full-width{grid-column:1/-1}
+.shipment-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:24px;align-items:end}
+.filter-field{min-width:0}
+.filter-field label{display:block;font-size:12px;font-weight:700;color:#52647d;margin-bottom:6px}
+.shipment-filter-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.shipment-warning{color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px;font-size:13px;margin-top:12px}
+.status-failed{background:#fff0dc;color:#a34111}
+.status-delivered{background:#e6f9ee;color:#136d40}
+.status-closed{background:#f0f1f5;color:#536174}
+.soft-divider{border:0;border-top:1px solid var(--border);margin:24px 0}
+.content-grid h3{font-size:15px;margin-bottom:14px}
+@media(max-width:850px){.shipment-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.shipment-form-grid,.shipment-filter-grid{grid-template-columns:1fr}.shipment-form-grid .full-width{grid-column:auto}.shipment-filter-actions .btn{flex:1}}

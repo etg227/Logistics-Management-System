@@ -8,21 +8,31 @@ IN_TRANSIT = "in_transit"
 OUT_FOR_DELIVERY = "out_for_delivery"
 DELIVERED = "delivered"
 CANCELLED = "cancelled"
+DELIVERY_FAILED = "delivery_failed"
+RETURNED = "returned"
 
 STATUS_LABELS = {
-    PENDING: "Pending",
-    ASSIGNED: "Assigned",
-    PICKED_UP: "Picked Up",
-    IN_TRANSIT: "In Transit",
-    OUT_FOR_DELIVERY: "Out for Delivery",
-    DELIVERED: "Delivered",
-    CANCELLED: "Cancelled",
+    PENDING: "Pending", ASSIGNED: "Assigned", PICKED_UP: "Picked Up",
+    IN_TRANSIT: "In Transit", OUT_FOR_DELIVERY: "Out for Delivery",
+    DELIVERED: "Delivered", CANCELLED: "Cancelled",
+    DELIVERY_FAILED: "Delivery Failed", RETURNED: "Returned to Sender",
 }
 DRIVER_NEXT_STATUS = {
     ASSIGNED: PICKED_UP,
     PICKED_UP: IN_TRANSIT,
     IN_TRANSIT: OUT_FOR_DELIVERY,
     OUT_FOR_DELIVERY: DELIVERED,
+}
+FAILURE_REASONS = {
+    "recipient_unavailable": "Recipient unavailable",
+    "incorrect_address": "Incorrect address",
+    "cannot_contact": "Cannot contact recipient",
+    "access_restricted": "Access restricted",
+    "other": "Other",
+}
+PACKAGE_TYPES = {
+    "parcel": "General Parcel", "documents": "Documents",
+    "fragile": "Fragile Goods", "other": "Other",
 }
 
 
@@ -39,6 +49,18 @@ class Shipment(db.Model):
     destination = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(300), nullable=True)
     weight_kg = db.Column(db.Float, nullable=False)
+    package_type = db.Column(db.String(30), nullable=False, default="parcel", server_default="parcel")
+    length_cm = db.Column(db.Float, nullable=True)
+    width_cm = db.Column(db.Float, nullable=True)
+    height_cm = db.Column(db.Float, nullable=True)
+    delivery_instructions = db.Column(db.String(300), nullable=True)
+    expected_delivery_date = db.Column(db.Date, nullable=True)
+    current_location = db.Column(db.String(120), nullable=True)
+    delivery_attempts = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    last_failure_reason = db.Column(db.String(40), nullable=True)
+    received_by = db.Column(db.String(120), nullable=True)
+    delivered_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    delivery_note = db.Column(db.String(300), nullable=True)
     status = db.Column(db.String(30), nullable=False, default=PENDING, index=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False,
                            default=lambda: datetime.now(timezone.utc))
@@ -56,6 +78,10 @@ class Shipment(db.Model):
     def status_label(self):
         return STATUS_LABELS.get(self.status, self.status)
 
+    @property
+    def package_type_label(self):
+        return PACKAGE_TYPES.get(self.package_type, "Other")
+
 
 class ShipmentEvent(db.Model):
     __tablename__ = "shipment_events"
@@ -64,6 +90,7 @@ class ShipmentEvent(db.Model):
     changed_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     status = db.Column(db.String(30), nullable=False)
     note = db.Column(db.String(255), nullable=True)
+    location = db.Column(db.String(120), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False,
                            default=lambda: datetime.now(timezone.utc))
     shipment = db.relationship("Shipment", back_populates="events")

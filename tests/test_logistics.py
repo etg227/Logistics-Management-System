@@ -195,7 +195,7 @@ def test_driver_can_advance_one_step_at_a_time(app, client):
     assign(app, sid)
     login(client, "driver")
     for status in ["picked_up", "in_transit", "out_for_delivery", "delivered"]:
-        assert client.post(f"/shipments/{sid}/advance", data={"status": status}).status_code == 302
+        assert client.post(f"/shipments/{sid}/advance", data={"status": status, "received_by": "Bob Receiver" if status == "delivered" else ""}).status_code == 302
         with app.app_context():
             assert db.session.get(Shipment, sid).status == status
     with app.app_context():

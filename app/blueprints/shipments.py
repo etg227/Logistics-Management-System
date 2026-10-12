@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_
@@ -5,10 +7,14 @@ from sqlalchemy import or_
 from app.extensions import db
 from app.forms import ShipmentForm
 from app.models import Customer, Shipment, User
-from app.models.shipment import PENDING, STATUS_LABELS, DRIVER_NEXT_STATUS
+from app.models.shipment import (
+    DELIVERY_FAILED, DRIVER_NEXT_STATUS, FAILURE_REASONS, OUT_FOR_DELIVERY,
+    PENDING, STATUS_LABELS,
+)
 from app.permissions import roles_required
 from app.services.shipment_service import (
-    WorkflowError, advance_delivery, assign_driver, cancel_shipment, create_shipment,
+    WorkflowError, advance_delivery, assign_driver, cancel_shipment,
+    create_shipment, mark_delivery_failed, resolve_failed_delivery,
 )
 
 shipments_bp = Blueprint("shipments", __name__, url_prefix="/shipments")
@@ -25,14 +31,22 @@ def _select_customers(form, extra_customer_id=None):
     form.customer_id.choices = [(c.id, f"{c.name} (#{c.id})") for c in customers]
 
 
-def _form_fields(form):
+def _clean_form_fields(form):
+    def trimmed(field):
+        return (field.data or "").strip() or None
     return dict(
         recipient_name=form.recipient_name.data.strip(),
         recipient_phone=form.recipient_phone.data.strip(),
         origin=form.origin.data.strip(),
         destination=form.destination.data.strip(),
-        description=(form.description.data or "").strip() or None,
+        description=trimmed(form.description),
         weight_kg=form.weight_kg.data,
+        package_type=form.package_type.data or "parcel",
+        length_cm=form.length_cm.data,
+        width_cm=form.width_cm.data,
+        height_cm=form.height_cm.data,
+        delivery_instructions=trimmed(form.delivery_instructions),
+        expected_delivery_date=form.expected_delivery_date.data,
     )
 
 
@@ -43,26 +57,55 @@ def _shipment_or_404(shipment_id):
     return shipment
 
 
+def _date_filter(raw):
+    try:
+        return date.fromisoformat(raw) if raw else None
+    except ValueError:
+        return None
+
+
 @shipments_bp.get("/")
 @login_required
 @roles_required("admin", "staff", "driver")
 def index():
-    search = request.args.get("q", "").strip()[:100]
+    q = request.args.get("q", "").strip()[:100]
     status = request.args.get("status", "").strip()
+    from_date = request.args.get("from_date", "").strip()
+    to_date = request.args.get("to_date", "").strip()
+    driver_id = request.args.get("driver_id", type=int)
+    sort = request.args.get("sort", "newest")
+
     stmt = db.select(Shipment)
     if current_user.role == "driver":
         stmt = stmt.where(Shipment.driver_id == current_user.id)
+    elif driver_id is not None and driver_id > 0:
+        stmt = stmt.where(Shipment.driver_id == driver_id)
     if status in STATUS_LABELS:
         stmt = stmt.where(Shipment.status == status)
-    if search:
-        value = f"%{search}%"
+    if q:
+        value = f"%{q}%"
         stmt = stmt.where(or_(Shipment.tracking_number.ilike(value),
                               Shipment.recipient_name.ilike(value)))
-    stmt = stmt.order_by(Shipment.created_at.desc(), Shipment.id.desc())
+    if _date_filter(from_date):
+        stmt = stmt.where(db.func.date(Shipment.created_at) >= from_date)
+    if _date_filter(to_date):
+        stmt = stmt.where(db.func.date(Shipment.created_at) <= to_date)
+    if sort == "oldest":
+        stmt = stmt.order_by(Shipment.created_at.asc(), Shipment.id.asc())
+    else:
+        sort = "newest"
+        stmt = stmt.order_by(Shipment.created_at.desc(), Shipment.id.desc())
     pagination = db.paginate(stmt, page=request.args.get("page", 1, type=int),
                              per_page=10, error_out=False)
-    return render_template("shipments/index.html", pagination=pagination,
-                           statuses=STATUS_LABELS, q=search, status=status)
+    drivers = []
+    if current_user.role in ("admin", "staff"):
+        drivers = db.session.scalars(db.select(User).where(User.role == "driver")
+                                     .order_by(User.full_name)).all()
+    return render_template(
+        "shipments/index.html", pagination=pagination, statuses=STATUS_LABELS,
+        q=q, status=status, from_date=from_date, to_date=to_date,
+        driver_id=driver_id, drivers=drivers, sort=sort,
+    )
 
 
 @shipments_bp.route("/new", methods=["GET", "POST"])
@@ -78,7 +121,7 @@ def create():
         else:
             shipment = create_shipment(
                 customer_id=customer.id, created_by_id=current_user.id,
-                **_form_fields(form),
+                **_clean_form_fields(form),
             )
             flash(f"Shipment {shipment.tracking_number} created.", "success")
             return redirect(url_for("shipments.detail", shipment_id=shipment.id))
@@ -96,10 +139,11 @@ def detail(shipment_id):
             db.select(User).where(User.role == "driver", User.is_active.is_(True))
             .order_by(User.full_name)
         ).all()
-    next_status = DRIVER_NEXT_STATUS.get(shipment.status)
-    return render_template("shipments/detail.html", shipment=shipment,
-                           drivers=drivers, next_status=next_status,
-                           statuses=STATUS_LABELS)
+    return render_template(
+        "shipments/detail.html", shipment=shipment, drivers=drivers,
+        next_status=DRIVER_NEXT_STATUS.get(shipment.status), statuses=STATUS_LABELS,
+        failure_reasons=FAILURE_REASONS,
+    )
 
 
 @shipments_bp.route("/<int:shipment_id>/edit", methods=["GET", "POST"])
@@ -118,7 +162,7 @@ def edit(shipment_id):
             form.customer_id.errors.append("Please select an active customer.")
         else:
             shipment.customer_id = customer.id
-            for key, value in _form_fields(form).items():
+            for key, value in _clean_form_fields(form).items():
                 setattr(shipment, key, value)
             db.session.commit()
             flash("Shipment details updated.", "success")
@@ -135,12 +179,12 @@ def assign(shipment_id):
     driver = db.session.get(User, driver_id) if driver_id is not None else None
     if driver is None:
         flash("Select a valid driver.", "danger")
-        return redirect(url_for("shipments.detail", shipment_id=shipment.id))
-    try:
-        assign_driver(shipment, driver, current_user.id)
-        flash("Driver assigned successfully.", "success")
-    except WorkflowError as exc:
-        flash(str(exc), "danger")
+    else:
+        try:
+            assign_driver(shipment, driver, current_user.id)
+            flash("Driver assigned successfully.", "success")
+        except WorkflowError as exc:
+            flash(str(exc), "danger")
     return redirect(url_for("shipments.detail", shipment_id=shipment.id))
 
 
@@ -150,8 +194,49 @@ def assign(shipment_id):
 def advance(shipment_id):
     shipment = _shipment_or_404(shipment_id)
     try:
-        advance_delivery(shipment, request.form.get("status", ""), current_user.id)
+        advance_delivery(
+            shipment, request.form.get("status", ""), current_user.id,
+            location=request.form.get("location", ""),
+            received_by=request.form.get("received_by", ""),
+            delivery_note=request.form.get("delivery_note", ""),
+        )
         flash("Delivery status updated.", "success")
+    except WorkflowError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("shipments.detail", shipment_id=shipment.id))
+
+
+@shipments_bp.post("/<int:shipment_id>/fail")
+@login_required
+@roles_required("driver")
+def fail(shipment_id):
+    shipment = _shipment_or_404(shipment_id)
+    try:
+        mark_delivery_failed(
+            shipment, current_user.id,
+            reason=request.form.get("reason", ""),
+            note=request.form.get("note", ""),
+            location=request.form.get("location", ""),
+        )
+        flash("Delivery failure recorded. Staff must review this shipment.", "warning")
+    except WorkflowError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("shipments.detail", shipment_id=shipment.id))
+
+
+@shipments_bp.post("/<int:shipment_id>/resolve")
+@login_required
+@roles_required("admin", "staff")
+def resolve(shipment_id):
+    shipment = db.get_or_404(Shipment, shipment_id)
+    driver_id = request.form.get("driver_id", type=int)
+    driver = db.session.get(User, driver_id) if driver_id is not None else None
+    try:
+        resolve_failed_delivery(
+            shipment, current_user.id, action=request.form.get("action", ""),
+            driver=driver, note=request.form.get("note", ""),
+        )
+        flash("Failed delivery resolved.", "success")
     except WorkflowError as exc:
         flash(str(exc), "danger")
     return redirect(url_for("shipments.detail", shipment_id=shipment.id))

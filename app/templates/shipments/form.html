@@ -1,13 +1,43 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} | CargoFlow{% endblock %}
 {% block content %}
-<section class="page-heading"><h1>{{ title }}</h1><a class="btn btn-outline" href="{{ url_for('shipments.index') }}">Back</a></section>
-<div class="card form-card"><form method="POST" novalidate>
-  {{ form.hidden_tag() }}
-  {% for field in [form.customer_id, form.recipient_name, form.recipient_phone, form.origin, form.destination, form.description, form.weight_kg] %}
-    <div class="form-group">{{ field.label(class='form-label') }}{{ field(class='form-control') }}
-      {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
-  {% endfor %}
-  {{ form.submit(class='btn btn-primary') }}
-</form></div>
+<section class="page-heading">
+  <div><div class="eyebrow">SHIPMENT MANAGEMENT</div><h1>{{ title }}</h1><p class="muted">Staff enter sender, recipient and package details for each shipment.</p></div>
+  <a class="btn btn-outline" href="{{ url_for('shipments.index') }}">Back to Shipments</a>
+</section>
+<div class="card shipment-form-card">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <h2>Sender &amp; Recipient</h2>
+    <div class="shipment-form-grid">
+      {% for field in [form.customer_id, form.recipient_name, form.recipient_phone, form.origin, form.destination] %}
+        <div class="form-group {% if field.name in ['origin', 'destination'] %}full-width{% endif %}">
+          {{ field.label(class='form-label') }}{{ field(class='form-control') }}
+          {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <hr class="soft-divider">
+    <h2>Package Information</h2>
+    <div class="shipment-form-grid">
+      {% for field in [form.package_type, form.weight_kg, form.length_cm, form.width_cm, form.height_cm] %}
+        <div class="form-group">
+          {{ field.label(class='form-label') }}{{ field(class='form-control') }}
+          {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      {% for field in [form.description, form.delivery_instructions] %}
+        <div class="form-group full-width">
+          {{ field.label(class='form-label') }}{{ field(class='form-control', rows=3) }}
+          {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      <div class="form-group">
+        {{ form.expected_delivery_date.label(class='form-label') }}{{ form.expected_delivery_date(class='form-control', type='date') }}
+        {% for error in form.expected_delivery_date.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+    {{ form.submit(class='btn btn-primary') }}
+  </form>
+</div>
 {% endblock %}

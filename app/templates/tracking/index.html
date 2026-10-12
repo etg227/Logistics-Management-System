@@ -1,18 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Track Package | CargoFlow{% endblock %}
 {% block content %}
-<section class="page-heading"><div><div class="eyebrow">TRACK YOUR PARCEL</div><h1>Shipment Tracking</h1>
-<p class="muted">Enter your tracking number to check the delivery progress.</p></div></section>
-<div class="card tracking-search"><form class="filter-bar" method="GET" action="{{ url_for('tracking.index') }}">
-<label class="sr-only" for="q">Tracking number</label><input id="q" name="q" value="{{ tracking_number }}" class="form-control" maxlength="40" placeholder="CF-20261012-XXXXXXXXXXXX" required>
-<button type="submit" class="btn btn-primary">Track</button></form></div>
+<section class="page-heading">
+  <div><div class="eyebrow">TRACK YOUR PARCEL</div><h1>Shipment Tracking</h1>
+    <p class="muted">Enter your tracking number to check delivery progress.</p></div>
+</section>
+<div class="card tracking-search">
+  <form class="filter-bar" method="GET" action="{{ url_for('tracking.index') }}">
+    <label class="sr-only" for="q">Tracking number</label>
+    <input id="q" name="q" value="{{ tracking_number }}" class="form-control" maxlength="40" placeholder="CF-20261012-XXXXXXXXXXXX" required>
+    <button type="submit" class="btn btn-primary">Track</button>
+  </form>
+</div>
 {% if not_found %}<div class="alert alert-warning section-gap">No shipment found for that tracking number.</div>{% endif %}
 {% if shipment %}
-<div class="card section-gap"><h2 class="mono tracking-heading">{{ shipment.tracking_number }}</h2>
-<p><span class="status-tag">{{ shipment.status_label }}</span></p><h3>Delivery History</h3>
-<ol class="timeline">{% for event in shipment.events|reverse %}
-  <li><strong>{{ event.status_label }}</strong><div class="muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div></li>
-{% endfor %}</ol>
+<div class="card section-gap">
+  <h2 class="mono tracking-heading">{{ shipment.tracking_number }}</h2>
+  <p><span class="status-tag {% if shipment.status == 'delivery_failed' %}status-failed{% elif shipment.status == 'delivered' %}status-delivered{% endif %}">{{ shipment.status_label }}</span></p>
+  {% if shipment.status == 'delivery_failed' %}<p class="shipment-warning">There is a delivery issue. The carrier is reviewing the next step.</p>{% endif %}
+  <h3>Delivery History</h3>
+  <ol class="timeline">
+    {% for event in shipment.events|reverse %}
+      <li><strong>{{ event.status_label }}</strong>
+        <div class="muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+        {% if event.location %}<div class="muted small">{{ event.location }}</div>{% endif %}
+      </li>
+    {% endfor %}
+  </ol>
 </div>
 {% endif %}
 {% endblock %}

@@ -5,7 +5,8 @@
   <div>
     <div class="eyebrow">SHIPMENT DETAILS</div>
     <h1 class="mono tracking-heading">{{ shipment.tracking_number }}</h1>
-    <span class="status-tag">{{ shipment.status_label }}</span>
+    <span class="status-tag {% if shipment.status == 'delivery_failed' %}status-failed{% elif shipment.status == 'delivered' %}status-delivered{% elif shipment.status in ['cancelled', 'returned'] %}status-closed{% endif %}">{{ shipment.status_label }}</span>
+    {% if shipment.status == 'delivery_failed' %}<p class="shipment-warning">Delivery failed. Staff action required.</p>{% endif %}
   </div>
   <a class="btn btn-outline" href="{{ url_for('shipments.index') }}">Back to Shipments</a>
 </section>
@@ -18,12 +19,26 @@
       <dt>Recipient</dt><dd>{{ shipment.recipient_name }} - {{ shipment.recipient_phone }}</dd>
       <dt>Origin</dt><dd>{{ shipment.origin }}</dd>
       <dt>Destination</dt><dd>{{ shipment.destination }}</dd>
+      <dt>Package Type</dt><dd>{{ shipment.package_type_label }}</dd>
       <dt>Weight</dt><dd>{{ '%.2f'|format(shipment.weight_kg) }} kg</dd>
+      <dt>Dimensions</dt><dd>{% if shipment.length_cm and shipment.width_cm and shipment.height_cm %}{{ '%g'|format(shipment.length_cm) }} &times; {{ '%g'|format(shipment.width_cm) }} &times; {{ '%g'|format(shipment.height_cm) }} cm{% else %}Not specified{% endif %}</dd>
       <dt>Contents</dt><dd>{{ shipment.description or 'None' }}</dd>
+      <dt>Instructions</dt><dd>{{ shipment.delivery_instructions or 'None' }}</dd>
+      <dt>Expected Date</dt><dd>{{ shipment.expected_delivery_date.isoformat() if shipment.expected_delivery_date else 'Not set' }}</dd>
+      <dt>Current Location</dt><dd>{{ shipment.current_location or 'Not reported' }}</dd>
       <dt>Driver</dt><dd>{{ shipment.driver.full_name if shipment.driver else 'Not assigned' }}</dd>
+      <dt>Attempts</dt><dd>{{ shipment.delivery_attempts or 0 }}</dd>
+      {% if shipment.received_by %}
+        <dt>Received By</dt><dd>{{ shipment.received_by }}</dd>
+        <dt>Delivered At</dt><dd>{{ shipment.delivered_at.strftime('%Y-%m-%d %H:%M') ~ ' UTC' if shipment.delivered_at else 'Not recorded' }}</dd>
+        <dt>Delivery Note</dt><dd>{{ shipment.delivery_note or 'None' }}</dd>
+      {% endif %}
+      {% if shipment.last_failure_reason %}
+        <dt>Last Failure</dt><dd>{{ failure_reasons.get(shipment.last_failure_reason, 'Not specified') }}</dd>
+      {% endif %}
     </dl>
     {% if current_user.role in ['admin', 'staff'] and shipment.status == 'pending' %}
-      <a class="btn btn-outline" href="{{ url_for('shipments.edit', shipment_id=shipment.id) }}">Edit Details</a>
+      <a class="btn btn-outline action-button" href="{{ url_for('shipments.edit', shipment_id=shipment.id) }}">Edit Details</a>
     {% endif %}
   </section>
 
@@ -36,15 +51,35 @@
           <label class="form-label" for="driver_id">Assign a driver</label>
           <select class="form-control" id="driver_id" name="driver_id" required>
             <option value="">Select driver</option>
-            {% for driver in drivers %}
-              <option value="{{ driver.id }}" {% if shipment.driver_id == driver.id %}selected{% endif %}>{{ driver.full_name }}</option>
-            {% endfor %}
+            {% for driver in drivers %}<option value="{{ driver.id }}" {% if shipment.driver_id == driver.id %}selected{% endif %}>{{ driver.full_name }}</option>{% endfor %}
           </select>
           <button type="submit" class="btn btn-primary action-button">Assign Driver</button>
         </form>
         <form method="POST" action="{{ url_for('shipments.cancel', shipment_id=shipment.id) }}" onsubmit="return confirm('Cancel this shipment?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-outline action-button">Cancel Shipment</button>
+        </form>
+      {% elif shipment.status == 'delivery_failed' %}
+        <p class="shipment-warning">Delivery failed. Choose how to resolve it.</p>
+        <form method="POST" action="{{ url_for('shipments.resolve', shipment_id=shipment.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="redeliver">
+          <label class="form-label" for="redelivery_driver">Driver for redelivery</label>
+          <select class="form-control" id="redelivery_driver" name="driver_id" required>
+            <option value="">Select active driver</option>
+            {% for driver in drivers %}<option value="{{ driver.id }}" {% if shipment.driver_id == driver.id %}selected{% endif %}>{{ driver.full_name }}</option>{% endfor %}
+          </select>
+          <label class="form-label action-button" for="redelivery_note">Instructions / note (optional)</label>
+          <textarea class="form-control" id="redelivery_note" name="note" maxlength="160" rows="2"></textarea>
+          <button class="btn btn-primary action-button" type="submit">Schedule Redelivery</button>
+        </form>
+        <hr class="soft-divider">
+        <form method="POST" action="{{ url_for('shipments.resolve', shipment_id=shipment.id) }}" onsubmit="return confirm('Mark this parcel as returned to sender? This is final.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="return">
+          <label class="form-label" for="return_note">Return note (optional)</label>
+          <textarea class="form-control" id="return_note" name="note" maxlength="160" rows="2"></textarea>
+          <button class="btn btn-outline action-button" type="submit">Return to Sender</button>
         </form>
       {% else %}
         <p class="muted">No further dispatch actions are available.</p>
@@ -56,13 +91,38 @@
           <input type="hidden" name="status" value="{{ next_status }}">
           <p class="muted">Next delivery status</p>
           <p><strong>{{ statuses[next_status] }}</strong></p>
-          <button type="submit" class="btn btn-primary">Update Delivery Status</button>
+          <label class="form-label" for="progress_location">Location / hub (optional)</label>
+          <input class="form-control" id="progress_location" name="location" maxlength="120" placeholder="e.g. Central Distribution Hub">
+          {% if next_status == 'delivered' %}
+            <label class="form-label action-button" for="received_by">Received by (required)</label>
+            <input class="form-control" id="received_by" name="received_by" maxlength="120" required placeholder="Name of recipient">
+            <label class="form-label action-button" for="delivery_note">Delivery note (optional)</label>
+            <textarea class="form-control" id="delivery_note" name="delivery_note" maxlength="300" rows="2"></textarea>
+          {% endif %}
+          <button class="btn btn-primary action-button" type="submit">{{ 'Confirm Delivery' if next_status == 'delivered' else 'Update Delivery Status' }}</button>
         </form>
+        {% if shipment.status == 'out_for_delivery' %}
+          <hr class="soft-divider">
+          <h3>Delivery issue?</h3>
+          <form method="POST" action="{{ url_for('shipments.fail', shipment_id=shipment.id) }}" onsubmit="return confirm('Record this delivery as failed? Staff will need to review it.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="form-label" for="failure_reason">Failure reason</label>
+            <select id="failure_reason" class="form-control" name="reason" required>
+              <option value="">Select reason</option>
+              {% for value, label in failure_reasons.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+            <label class="form-label action-button" for="failure_note">Additional details (required for Other)</label>
+            <textarea id="failure_note" name="note" class="form-control" maxlength="160" rows="2"></textarea>
+            <label class="form-label action-button" for="failure_location">Location / hub (optional)</label>
+            <input id="failure_location" name="location" class="form-control" maxlength="120">
+            <button type="submit" class="btn btn-outline action-button">Report Delivery Failed</button>
+          </form>
+        {% endif %}
       {% else %}
         <p class="muted">No further delivery action is available.</p>
       {% endif %}
     {% endif %}
-    <p class="small muted">Public lookup:
+    <p class="small muted section-gap">Public lookup:
       <a class="table-link" href="{{ url_for('tracking.index', q=shipment.tracking_number) }}">View tracking</a>
     </p>
   </section>
@@ -75,11 +135,10 @@
       <li>
         <strong>{{ event.status_label }}</strong>
         <div class="muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+        {% if event.location %}<div class="small">Location: {{ event.location }}</div>{% endif %}
         <p>{{ event.note or '' }} - {{ event.changed_by.full_name }}</p>
       </li>
-    {% else %}
-      <li>No updates yet.</li>
-    {% endfor %}
+    {% else %}<li>No updates yet.</li>{% endfor %}
   </ol>
 </section>
 {% endblock %}
