@@ -1,87 +1,165 @@
-# CargoFlow - Logistics Management System
+## 🚀 Getting started
 
-A web-based Logistics Management System developed with
-Python, Flask, SQLAlchemy, SQLite, HTML and CSS.
+You need Python 3.10 or newer and Git.
 
-## Tech Stack
+### 1. Clone the repository
 
-- Python 3
-- Flask
-- Flask-SQLAlchemy
-- Flask-Login
-- Flask-WTF
-- Flask-Migrate
-- SQLite
-- Jinja2
-- pytest
+Clone it into a normal folder, **not** inside iCloud Drive, OneDrive or Dropbox. Sync tools can damage the `.git` folder.
 
-## Installation (Windows PowerShell)
+```bash
+git clone https://github.com/etg227/Logistics-Management-System.git
+cd Logistics-Management-System
+```
 
-Create a virtual environment:
+### 2. Create a virtual environment and install packages
 
-    python -m venv .venv
+**Windows (PowerShell)**
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
 
-Install the dependencies:
+**macOS / Linux**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
 
-    .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Open `.env` and replace the `SECRET_KEY` value with a random string. You can generate one with:
 
-Create a `.env` file with a secure SECRET_KEY.
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
 
-Initialize the database:
+### 3. Create the database and an admin account
 
-    .\.venv\Scripts\python.exe -m flask --app run db init
-    .\.venv\Scripts\python.exe -m flask --app run db migrate -m "Initial users table"
-    .\.venv\Scripts\python.exe -m flask --app run db upgrade
+```bash
+flask --app run db upgrade
+flask --app run create-user --role admin
+```
 
-Create an administrator:
+`create-user` asks for an email, a name and a password (at least 8 characters).
 
-    .\.venv\Scripts\python.exe -m flask --app run create-user --role admin
+> ⚠️ **Only run `db upgrade`.** Do **not** run `flask db init` (the `migrations/` folder already exists) or `flask db migrate` unless your task changes a model. See [Changing the database](#changing-the-database).
 
-Run the application:
+### 4. Run the app
 
-    .\.venv\Scripts\python.exe run.py
+```bash
+flask --app run run --debug --port 5001
+```
 
-Open http://127.0.0.1:5000
+Open http://127.0.0.1:5001 and sign in with the admin account. With `--debug`, the server reloads when you save a file.
 
-## Testing
+We use port 5001 because macOS uses port 5000 for AirPlay Receiver.
 
-    .\.venv\Scripts\python.exe -m pytest -q
+### 5. Run the tests
 
-## User Roles
+```bash
+pytest -q
+```
 
-- Admin
-- Staff
-- Driver
+All tests must pass before you open a pull request.
 
-## Stage 1
+---
 
-- Flask Application Factory
-- Authentication
-- Role-Based Access Control
-- SQLite Database
-- Database Migrations
-- Dashboard UI
-- Automated Tests
+## 🤝 How we work
 
-## Future Development
+### Every time you start working
 
-Stage 2:
-- Customer Management
-- Shipment Management
-- Driver Assignment
-- Shipment Tracking
+```bash
+git checkout main
+git pull
+pip install -r requirements.txt   # in case someone added a package
+flask --app run db upgrade        # in case someone added a migration
+```
 
-Stage 3:
-- Dashboard Statistics
-- Search and Filtering
-- Reports and CSV Export
+### Working on a task
 
-## Security
+1. **Create a branch** named after your task:
+   ```bash
+   git checkout -b T01-warehouse-model
+   ```
+2. **Write the code and the tests**, then run `pytest -q`.
+3. **Commit with your own GitHub account**, with a clear message:
+   ```bash
+   git add .
+   git commit -m "T01: add Warehouse model and list page"
+   git push -u origin T01-warehouse-model
+   ```
+4. **Open a pull request** on GitHub into `main`. Mention the task ID in the title.
+5. **Another member reviews** it. After approval, merge it, and update the task board status.
 
-Do not commit:
-- .env
-- SQLite database files
-- .venv
+### Rules
 
-This is a local development application, not a
-production deployment.
+- **Never push directly to `main`.** Always use a branch and a pull request.
+- **Use your own GitHub account.** Check with `git config user.name` and `git config user.email`. Commits made from someone else's account do not count as your contribution.
+- **One task per branch.** Keep pull requests small, so they are easy to review.
+- **Never commit** `.env`, `.venv/`, `instance/` or `*.db` files. `.gitignore` already excludes them.
+
+### Changing the database
+
+If your task adds or changes a model in `app/models/`:
+
+```bash
+flask --app run db migrate -m "Add warehouse table"
+flask --app run db upgrade
+```
+
+Commit the new file in `migrations/versions/` together with your model change. Tell the group in your pull request, so everyone runs `db upgrade` after pulling.
+
+### Definition of Done
+
+A task is done when:
+1. It works in the browser for every role that should use it, and is blocked for roles that should not.
+2. It has automated tests, and `pytest -q` passes.
+3. Any new page is reachable from the navigation.
+4. Another member has reviewed and approved the pull request.
+5. The task board in this README is updated.
+
+---
+
+## 👥 Roles and permissions
+
+| Operation | Admin | Staff | Driver | Public |
+|---|---|---|---|---|
+| Dashboard | ✓ | ✓ | Own shipments | |
+| Manage customers | ✓ | ✓ | | |
+| Create and edit pending shipments | ✓ | ✓ | | |
+| Assign drivers, resolve failed deliveries, cancel | ✓ | ✓ | | |
+| Update delivery status | | | Own shipments | |
+| Reports and CSV export | ✓ | ✓ | | |
+| Manage user accounts | ✓ | | | |
+| Track a parcel by tracking number | ✓ | ✓ | ✓ | ✓ |
+
+## 🗂️ Project structure
+
+```
+app/
+├── __init__.py          create_app(): config, extensions, blueprints, CLI commands
+├── extensions.py        db, login manager, CSRF, migrations
+├── permissions.py       @roles_required(...)
+├── forms.py             customer and shipment forms
+├── admin_forms.py       user management forms
+├── models/              User, Customer, Shipment, ShipmentEvent
+├── services/            business rules (shipment workflow, analytics, user management)
+├── blueprints/          routes: auth, main, customers, shipments, tracking, admin_users, reports
+├── templates/           Jinja2 pages, one folder per blueprint
+└── static/css/          stylesheets
+migrations/              database migrations (Flask-Migrate / Alembic)
+tests/                   pytest tests
+docs/architecture.md     architecture and requirements notes
+run.py                   entry point
+```
+
+Business rules belong in `app/services/`, not in the routes. For example, all shipment status changes go through `app/services/shipment_service.py`, which checks the rules and records a `ShipmentEvent`.
+
+## 🔒 Security notes
+
+- Passwords are stored as hashes. All forms that change data use POST with CSRF protection.
+- Permissions are checked on the server in every route, not only by hiding links.
+- `.env` and database files are never committed.
+- This is a local development application, not a production deployment.
