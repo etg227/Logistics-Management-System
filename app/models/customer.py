@@ -14,3 +14,6 @@ class Customer(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), nullable=False,
                            default=lambda: datetime.now(timezone.utc))
     shipments = db.relationship("Shipment", back_populates="customer")
+    portal_users = db.relationship("User", back_populates="customer",
+                                   foreign_keys="User.customer_id")
+    invoices = db.relationship("Invoice", back_populates="customer")

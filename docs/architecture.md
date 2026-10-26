@@ -7,28 +7,33 @@
 - Business rules: `app/services/shipment_service.py`.
 - Data persistence: Flask-SQLAlchemy models and Alembic migrations (SQLite).
 - Authentication: Flask-Login; login session and CSRF validation.
+- Extensions: warehouse/inventory records, in-app notifications, customer portal accounts and invoices.
 
 ## User roles and permissions
 
-| Operation | Admin | Staff | Driver | Public |
-|---|---|---|---|---|
-| Dashboard | Yes | Yes | Yes (own shipments) | No |
-| Create and update customers | Yes | Yes | No | No |
-| Create and edit pending shipments | Yes | Yes | No | No |
-| Assign active drivers | Yes | Yes | No | No |
-| Cancel pre-pickup shipments | Yes | Yes | No | No |
-| See internal shipment details | Yes | Yes | Own deliveries only | No |
-| Advance assigned delivery | No | No | Own deliveries only | No |
-| View tracking status timeline | Yes | Yes | Yes | Yes (with tracking number) |
+| Operation | Admin | Staff | Driver | Customer | Public |
+|---|---|---|---|---|---|
+| Dashboard | Yes | Yes | Yes (own shipments) | Portal | No |
+| Create and update customers | Yes | Yes | No | No | No |
+| Create and edit pending shipments | Yes | Yes | No | No | No |
+| Assign active drivers | Yes | Yes | No | No | No |
+| Cancel pre-pickup shipments | Yes | Yes | No | No | No |
+| See internal shipment details | Yes | Yes | Own deliveries only | Own shipments | No |
+| Advance assigned delivery | No | No | Own deliveries only | No | No |
+| View tracking status timeline | Yes | Yes | Yes | Own shipments | Yes (with tracking number) |
+| Customer portal, own shipments and invoices | No | No | No | Own records only | No |
+| Warehouse and inventory management | Yes | Yes | No | No | No |
+| Issue and reconcile invoices | Yes | Yes | No | View own invoices | No |
+| In-app notifications | Yes | Yes | Yes | Own notifications | No |
 
 ## Core entities
 
-- `User`: sign-in credentials and role (`admin`, `staff`, `driver`).
+- `User`: sign-in credentials and role (`admin`, `staff`, `driver`, `customer`); customer portal users link to `Customer`.
 - `Customer`: sender details and active/inactive state.
 - `Shipment`: tracking number, sender, recipient, addresses, weight, assigned driver and current status.
 - `ShipmentEvent`: immutable event row generated on creation, assignment, status change or cancellation.
 
-Relationships: `Customer 1 -- n Shipment`, `User(driver) 1 -- n Shipment`, `Shipment 1 -- n ShipmentEvent`.
+Relationships: `Customer 1 -- n Shipment`, `Customer 1 -- n Invoice`, `Customer 1 -- n User(customer portal)`, `User(driver) 1 -- n Shipment`, `Shipment 1 -- n ShipmentEvent`.
 
 ## Delivery workflow
 
@@ -55,3 +60,10 @@ Only `Pending` and `Assigned` can become `Cancelled`; driver assignment and reas
 - NFR02: Authorization is enforced in controllers and business rules, not only through hidden navigation links.
 - NFR03: Passwords are stored as password hashes; `.env` and SQLite databases are excluded from Git.
 - NFR04: Automated regression tests cover authentication, validation, permissions, workflow and tracking privacy.
+
+## Extension entities
+
+- `Warehouse` and `InventoryItem`: storage locations and stock quantities with reorder thresholds.
+- `Notification`: user-scoped in-app messages, optionally linked to a shipment.
+- `Invoice`: customer billing record with optional shipment link, surcharge, tax, due date and paid status.
+- Customer portal users have role `customer` and a required `customer_id`; portal queries are always scoped to that customer.

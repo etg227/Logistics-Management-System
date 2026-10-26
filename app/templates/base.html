@@ -23,10 +23,16 @@
       {% if current_user.role in ['admin', 'staff'] %}
         <a class="nav-link {% if request.blueprint == 'customers' %}is-active{% endif %}" href="{{ url_for('customers.index') }}"><span class="nav-icon" aria-hidden="true">♧</span> Customers</a>
         <a class="nav-link {% if request.blueprint == 'reports' %}is-active{% endif %}" href="{{ url_for('reports.index') }}"><span class="nav-icon" aria-hidden="true">▤</span> Reports</a>
+        <a class="nav-link {% if request.blueprint == 'warehouses' %}is-active{% endif %}" href="{{ url_for('warehouses.index') }}"><span class="nav-icon" aria-hidden="true">⌂</span> Warehouses</a>
+        <a class="nav-link {% if request.blueprint == 'invoices' %}is-active{% endif %}" href="{{ url_for('invoices.index') }}"><span class="nav-icon" aria-hidden="true">¤</span> Invoices</a>
       {% endif %}
       {% if current_user.role == 'admin' %}
         <a class="nav-link {% if request.blueprint == 'admin_users' %}is-active{% endif %}" href="{{ url_for('admin_users.index') }}"><span class="nav-icon" aria-hidden="true">♙</span> Users</a>
       {% endif %}
+      {% if current_user.role == 'customer' %}
+        <a class="nav-link {% if request.blueprint == 'portal' %}is-active{% endif %}" href="{{ url_for('portal.index') }}"><span class="nav-icon" aria-hidden="true">⌂</span> My Portal</a>
+      {% endif %}
+      <a class="nav-link {% if request.blueprint == 'notifications' %}is-active{% endif %}" href="{{ url_for('notifications.index') }}"><span class="nav-icon" aria-hidden="true">◉</span> Notifications{% if unread_notifications %} <span class="status-tag">{{ unread_notifications }}</span>{% endif %}</a>
     </nav>
     <div class="sidebar-bottom">
       <a class="nav-link subtle-link" href="{{ url_for('tracking.index') }}">Track a parcel <span aria-hidden="true">↗</span></a>

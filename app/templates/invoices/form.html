@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">BILLING</div><h1>{{ title }}</h1></div><a class="btn btn-outline" href="{{ url_for('invoices.index') }}">Back to Invoices</a></section>
+<section class="card form-card"><form method="POST" novalidate>{{ form.hidden_tag() }}{% for field in [form.customer_id, form.shipment_id, form.subtotal, form.surcharge, form.tax, form.due_date, form.notes] %}<div class="form-group">{{ field.label(class="form-label") }}{{ field(class="form-control", rows=3) if field.name == 'notes' else field(class="form-control") }}{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}<p class="muted small">All amounts are in HKD. The invoice total is calculated from subtotal, surcharge and tax.</p>{{ form.submit(class="btn btn-primary") }}</form></section>
+{% endblock %}

@@ -6,7 +6,7 @@ from app.extensions import db
 from app.models import Shipment, User
 from app.models.shipment import ASSIGNED, IN_TRANSIT, OUT_FOR_DELIVERY, PICKED_UP
 
-VALID_ROLES = {"admin", "staff", "driver"}
+VALID_ROLES = {"admin", "staff", "driver", "customer"}
 ACTIVE_DELIVERY_STATUSES = {ASSIGNED, PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY}
 
 
@@ -39,6 +39,9 @@ def validate_user_change(user, actor, *, new_role=None, new_active=None):
 
     if role not in VALID_ROLES:
         raise UserManagementError("Invalid user role.")
+
+    if role == "customer" and not user.customer_id:
+        raise UserManagementError("A customer account must be linked to a customer record.")
 
     if user.id == actor.id and (role != "admin" or not active):
         raise UserManagementError("You cannot disable or demote your own administrator account.")

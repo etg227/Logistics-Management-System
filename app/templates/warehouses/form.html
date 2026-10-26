@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">INVENTORY OPERATIONS</div><h1>{{ title }}</h1></div><a class="btn btn-outline" href="{{ url_for('warehouses.index') }}">Back to Warehouses</a></section>
+<section class="card form-card"><form method="POST" novalidate>{{ form.hidden_tag() }}{% for field in [form.name, form.location, form.capacity] %}<div class="form-group">{{ field.label(class="form-label") }}{{ field(class="form-control") }}{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>{% endfor %}{{ form.submit(class="btn btn-primary") }}</form></section>
+{% endblock %}

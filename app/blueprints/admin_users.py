@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.admin_forms import CreateUserForm, ResetPasswordForm, UserDetailsForm
 from app.extensions import db
-from app.models import User
+from app.models import Customer, User
 from app.permissions import roles_required
 from app.services.user_management import (
     UserManagementError, email_taken, normalize_email, validate_user_change,
@@ -25,7 +25,7 @@ def index():
     if search:
         pattern = f"%{search}%"
         stmt = stmt.where(or_(User.full_name.ilike(pattern), User.email.ilike(pattern)))
-    if role in {"admin", "staff", "driver"}:
+    if role in {"admin", "staff", "driver", "customer"}:
         stmt = stmt.where(User.role == role)
     if status == "active":
         stmt = stmt.where(User.is_active.is_(True))
@@ -44,6 +44,8 @@ def index():
 @roles_required("admin")
 def create():
     form = CreateUserForm()
+    form.customer_id.choices = [(0, "Not linked")] + [(c.id, f"{c.name} (#{c.id})") for c in
+                                db.session.scalars(db.select(Customer).where(Customer.active.is_(True)).order_by(Customer.name)).all()]
     if form.validate_on_submit():
         email = normalize_email(form.email.data)
         full_name = form.full_name.data.strip()
@@ -51,8 +53,13 @@ def create():
             form.full_name.errors.append("Please enter a name.")
         elif email_taken(email):
             form.email.errors.append("This email is already registered.")
+        elif form.role.data == "customer" and not form.customer_id.data:
+            form.customer_id.errors.append("Select the customer this account belongs to.")
+        elif form.role.data == "customer" and db.session.get(Customer, form.customer_id.data) is None:
+            form.customer_id.errors.append("Select an existing customer record.")
         else:
-            user = User(full_name=full_name, email=email, role=form.role.data, is_active=True)
+            user = User(full_name=full_name, email=email, role=form.role.data, is_active=True,
+                        customer_id=form.customer_id.data if form.role.data == "customer" else None)
             user.set_password(form.password.data)
             db.session.add(user)
             try:
@@ -80,6 +87,8 @@ def detail(user_id):
 def edit(user_id):
     user = db.get_or_404(User, user_id)
     form = UserDetailsForm(obj=user)
+    form.customer_id.choices = [(0, "Not linked")] + [(c.id, f"{c.name} (#{c.id})") for c in
+                                db.session.scalars(db.select(Customer).order_by(Customer.name)).all()]
     if form.validate_on_submit():
         email = normalize_email(form.email.data)
         full_name = form.full_name.data.strip()
@@ -87,8 +96,13 @@ def edit(user_id):
             form.full_name.errors.append("Please enter a name.")
         elif email_taken(email, except_user_id=user.id):
             form.email.errors.append("This email is already registered.")
+        elif form.role.data == "customer" and not form.customer_id.data:
+            form.customer_id.errors.append("Select the customer this account belongs to.")
+        elif form.role.data == "customer" and db.session.get(Customer, form.customer_id.data) is None:
+            form.customer_id.errors.append("Select an existing customer record.")
         else:
             try:
+                user.customer_id = form.customer_id.data if form.role.data == "customer" else None
                 validate_user_change(user, current_user, new_role=form.role.data)
             except UserManagementError as exc:
                 form.role.errors.append(str(exc))

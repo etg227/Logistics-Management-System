@@ -72,7 +72,7 @@ def login():
             and user.check_password(form.password.data)
         ):
             login_user(user)
-            return redirect(url_for("main.dashboard"))
+            return redirect(url_for("portal.index" if user.role == "customer" else "main.dashboard"))
 
         flash("Invalid email or password.", "danger")
 

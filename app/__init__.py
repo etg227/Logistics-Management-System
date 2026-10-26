@@ -32,7 +32,7 @@ def create_app(test_config=None):
     csrf.init_app(app)
     migrate.init_app(app, db)
 
-    from app.models import User, Customer, Shipment, ShipmentEvent  # noqa: F401
+    from app.models import User, Customer, Shipment, ShipmentEvent, Warehouse, InventoryItem, Notification, Invoice  # noqa: F401
     from app.blueprints.auth import auth_bp
     from app.blueprints.main import main_bp
     from app.blueprints.customers import customers_bp
@@ -40,8 +40,14 @@ def create_app(test_config=None):
     from app.blueprints.tracking import tracking_bp
     from app.blueprints.admin_users import admin_users_bp
     from app.blueprints.reports import reports_bp
+    from app.blueprints.warehouses import warehouses_bp
+    from app.blueprints.notifications import notifications_bp
+    from app.blueprints.portal import portal_bp
+    from app.blueprints.invoices import invoices_bp
 
-    for blueprint in (auth_bp, main_bp, customers_bp, shipments_bp, tracking_bp, admin_users_bp, reports_bp):
+    for blueprint in (auth_bp, main_bp, customers_bp, shipments_bp, tracking_bp,
+                      admin_users_bp, reports_bp, warehouses_bp, notifications_bp,
+                      portal_bp, invoices_bp):
         app.register_blueprint(blueprint)
 
     @login_manager.user_loader
@@ -95,5 +101,15 @@ def create_app(test_config=None):
     def csrf_error(error):
         return render_template("errors/error.html", code=400,
                                message="Invalid form token. Refresh the page."), 400
+
+    @app.context_processor
+    def inject_unread_notifications():
+        from flask_login import current_user
+        from app.models import Notification
+        if not current_user.is_authenticated:
+            return {"unread_notifications": 0}
+        count = db.session.scalar(db.select(db.func.count(Notification.id)).where(
+            Notification.user_id == current_user.id, Notification.is_read.is_(False))) or 0
+        return {"unread_notifications": count}
 
     return app

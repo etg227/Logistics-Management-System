@@ -124,16 +124,17 @@ A task is done when:
 
 ## 👥 Roles and permissions
 
-| Operation | Admin | Staff | Driver | Public |
-|---|---|---|---|---|
-| Dashboard | ✓ | ✓ | Own shipments | |
-| Manage customers | ✓ | ✓ | | |
-| Create and edit pending shipments | ✓ | ✓ | | |
-| Assign drivers, resolve failed deliveries, cancel | ✓ | ✓ | | |
-| Update delivery status | | | Own shipments | |
-| Reports and CSV export | ✓ | ✓ | | |
-| Manage user accounts | ✓ | | | |
-| Track a parcel by tracking number | ✓ | ✓ | ✓ | ✓ |
+| Operation | Admin | Staff | Driver | Customer | Public |
+|---|---|---|---|---|---|
+| Dashboard | ✓ | ✓ | Own shipments | | |
+| Manage customers | ✓ | ✓ | | | |
+| Create and edit pending shipments | ✓ | ✓ | | | |
+| Assign drivers, resolve failed deliveries, cancel | ✓ | ✓ | | | |
+| Update delivery status | | | Own shipments | | |
+| Reports and CSV export | ✓ | ✓ | | | |
+| Manage user accounts | ✓ | | | | |
+| Track a parcel by tracking number | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Customer portal (own shipments and invoices) | | | | Own records | |
 
 ## 🗂️ Project structure
 
@@ -144,9 +145,9 @@ app/
 ├── permissions.py       @roles_required(...)
 ├── forms.py             customer and shipment forms
 ├── admin_forms.py       user management forms
-├── models/              User, Customer, Shipment, ShipmentEvent
+├── models/              User, Customer, Shipment, ShipmentEvent, Warehouse, InventoryItem, Notification, Invoice
 ├── services/            business rules (shipment workflow, analytics, user management)
-├── blueprints/          routes: auth, main, customers, shipments, tracking, admin_users, reports
+├── blueprints/          routes: auth, main, customers, shipments, tracking, admin_users, reports, warehouses, notifications, portal, invoices
 ├── templates/           Jinja2 pages, one folder per blueprint
 └── static/css/          stylesheets
 migrations/              database migrations (Flask-Migrate / Alembic)
@@ -163,3 +164,14 @@ Business rules belong in `app/services/`, not in the routes. For example, all sh
 - Permissions are checked on the server in every route, not only by hiding links.
 - `.env` and database files are never committed.
 - This is a local development application, not a production deployment.
+
+## Current product extensions
+
+The current development branch also includes the following MVP modules:
+
+- **Warehouse management:** administrators and staff can create warehouses, add inventory items, adjust quantities and see reorder warnings.
+- **In-app notifications:** shipment status changes and new invoices create notifications for linked customer accounts and assigned drivers. Users can mark notifications read.
+- **Customer portal:** a customer account is linked to a customer record and can see only its own shipments, invoices and recent updates at `/portal/`.
+- **Billing:** administrators and staff can issue one invoice per shipment or a general customer invoice, record surcharge/tax, and mark invoices as paid.
+
+Run `flask --app run db upgrade` after pulling these changes. To create a portal account, an administrator adds a user with role **Customer** and links it to an existing customer record.

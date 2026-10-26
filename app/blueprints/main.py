@@ -20,6 +20,8 @@ def index():
 @main_bp.get("/dashboard")
 @login_required
 def dashboard():
+    if current_user.role == "customer":
+        return redirect(url_for("portal.index"))
     data = dashboard_data(current_user)
     data.update(driver_tasks=[], unassigned=[], unassigned_count=0)
     if current_user.role == "driver":
