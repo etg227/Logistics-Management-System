@@ -27,6 +27,10 @@
       {% if current_user.role == 'admin' %}
         <a class="nav-link {% if request.blueprint == 'admin_users' %}is-active{% endif %}" href="{{ url_for('admin_users.index') }}"><span class="nav-icon" aria-hidden="true">♙</span> Users</a>
       {% endif %}
+      {% if current_user.role == 'driver' %}
+        <a class="nav-link {% if request.endpoint == 'main.driver' %}is-active{% endif %}" href="{{ url_for('main.driver') }}"><span class="nav-icon" aria-hidden="true">◈</span> Worklist</a>
+      {% endif %}
+      <a class="nav-link {% if request.endpoint == 'profile.change_password' %}is-active{% endif %}" href="{{ url_for('profile.change_password') }}"><span class="nav-icon" aria-hidden="true">⚿</span> Account</a>
     </nav>
     <div class="sidebar-bottom">
       <a class="nav-link subtle-link" href="{{ url_for('tracking.index') }}">Track a parcel <span aria-hidden="true">↗</span></a>
