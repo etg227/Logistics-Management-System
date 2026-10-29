@@ -46,6 +46,17 @@ flask --app run create-user --role admin
 
 > ⚠️ **Only run `db upgrade`.** Do **not** run `flask db init` (the `migrations/` folder already exists) or `flask db migrate` unless your task changes a model. See [Changing the database](#changing-the-database).
 
+Optional: load demo data so the pages are not empty while you click around.
+
+```bash
+python scripts/seed_demo.py                  # three staff/driver accounts, eight shipments covering every status
+python scripts/seed_demo.py --reset-passwords
+```
+
+The seeded accounts use the password `demo12345`. The script never creates an
+admin account — use `create-user` above for that. It is safe to re-run: it only
+adds what is missing.
+
 ### 4. Run the app
 
 ```bash
