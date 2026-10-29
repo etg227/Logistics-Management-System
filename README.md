@@ -62,6 +62,11 @@ We use port 5001 because macOS uses port 5000 for AirPlay Receiver.
 pytest -q
 ```
 
+Run this with the project virtual environment active (Git Bash: `source .venv/Scripts/activate`,
+cmd: `.venv\Scripts\activate`, PowerShell: `.venv\Scripts\Activate.ps1`). Without it you will see
+`ModuleNotFoundError: No module named 'app'` or `flask` — that is the venv, not the code.
+`pytest.ini` already puts the repo root on `sys.path`, so no `PYTHONPATH` tweak is needed.
+
 All tests must pass before you open a pull request.
 
 ---
