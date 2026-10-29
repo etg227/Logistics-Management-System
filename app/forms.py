@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import (DateField, FloatField, SelectField, StringField,
-                     SubmitField, TextAreaField)
-from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
+from wtforms import (DateField, FloatField, PasswordField, SelectField,
+                     StringField, SubmitField, TextAreaField)
+from wtforms.validators import (DataRequired, Email, EqualTo, Length,
+                                NumberRange, Optional)
 
 from app.models.shipment import PACKAGE_TYPES
 
@@ -29,3 +30,13 @@ class ShipmentForm(FlaskForm):
     delivery_instructions = TextAreaField("Delivery instructions", validators=[Optional(), Length(max=300)])
     expected_delivery_date = DateField("Expected delivery date", validators=[Optional()], format="%Y-%m-%d")
     submit = SubmitField("Save Shipment")
+
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField("Current password", validators=[DataRequired(), Length(max=128)])
+    password = PasswordField("New password", validators=[DataRequired(), Length(min=8, max=128)])
+    confirm_password = PasswordField(
+        "Confirm new password",
+        validators=[DataRequired(), EqualTo("password", message="Passwords must match.")],
+    )
+    submit = SubmitField("Update password")
