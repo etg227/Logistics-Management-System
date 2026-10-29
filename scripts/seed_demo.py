@@ -26,7 +26,6 @@ from app.models.shipment import (  # noqa: E402
 )
 from app.services.shipment_service import (  # noqa: E402
     advance_delivery, assign_driver, create_shipment, mark_delivery_failed,
-    resolve_failed_delivery,
 )
 
 DEMO_PASSWORD = "demo12345"
@@ -81,6 +80,8 @@ def make_shipment(*, customer, actor, recipient, phone, destination, driver,
                   target="assigned", received_by=None, failure_reason=None,
                   failure_note=""):
     """Drive one shipment to `target` through the real service functions."""
+    if target not in CHAIN and target not in ("assigned", "delivered", "delivery_failed"):
+        raise ValueError(f"unsupported seed target: {target!r}")
     if shipment_exists(recipient):
         return None
     shipment = create_shipment(
@@ -91,7 +92,12 @@ def make_shipment(*, customer, actor, recipient, phone, destination, driver,
     )
     if driver is not None:
         assign_driver(shipment, driver, actor.id)
-        stop_at = len(CHAIN) - 1 if target in ("delivered", "delivery_failed") else CHAIN.index(target)
+        if target in CHAIN:
+            stop_at = CHAIN.index(target)
+        elif target in ("delivered", "delivery_failed"):
+            stop_at = len(CHAIN) - 1
+        else:  # "assigned": the shipment stops right after the assignment
+            stop_at = -1
         for step in CHAIN[: stop_at + 1]:
             advance_delivery(shipment, step, driver.id)
         if target == "delivered":
