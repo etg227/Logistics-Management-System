@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Worklist | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading product-heading">
+  <div><span class="eyebrow">DRIVER WORKLIST</span><h1>Today's work</h1>
+    <p class="muted">Only shipments assigned to {{ current_user.full_name }} are shown.</p></div>
+  <a class="btn btn-outline" href="{{ url_for('shipments.index') }}">All deliveries</a>
+</section>
+
+<section class="product-kpis driver-kpis driver-kpis-wide">
+  <a class="card product-kpi interactive-kpi {% if action_now %}is-critical{% endif %}" href="#needs-action"><span>Needs action now</span><strong>{{ action_now|length }}</strong><small>Out for delivery</small></a>
+  <a class="card product-kpi interactive-kpi" href="#in-progress"><span>Open tasks</span><strong>{{ open_count }}</strong><small>Assigned to you</small></a>
+  <a class="card product-kpi interactive-kpi" href="#needs-review"><span>Needs review</span><strong>{{ attention_total }}</strong><small>Reported failures</small></a>
+  <div class="card product-kpi"><span>Delivered</span><strong>{{ delivered_total }}</strong><small>All time</small></div>
+</section>
+
+<section class="card dashboard-queue" id="needs-action">
+  <div class="panel-head"><h2>Needs action now</h2><span class="quiet-label">Sign off or report a failure</span></div>
+  {% if action_now %}
+    <div class="dashboard-list">
+      {% for s in action_now %}
+        <a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">
+          <div><strong>{{ s.recipient_name }}</strong><span class="muted">{{ s.destination }}</span><small class="mono">{{ s.tracking_number }} · attempt {{ s.delivery_attempts or 0 }}</small></div>
+          <span class="status-tag status-out-for-delivery">{{ s.status_label }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}<p class="muted">Nothing waiting on you. Start the next delivery attempt when you are ready.</p>{% endif %}
+</section>
+
+<div class="product-dashboard-grid">
+  <section class="card dashboard-queue" id="in-progress">
+    <div class="panel-head"><h2>In progress</h2><span class="quiet-label">{{ in_progress|length }} open</span></div>
+    {% if in_progress %}
+      <div class="dashboard-list">
+        {% for s in in_progress %}
+          <a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">
+            <div><strong>{{ s.recipient_name }}</strong><span class="muted mono">{{ s.tracking_number }}</span></div>
+            <span class="status-tag status-{{ s.status|replace('_','-') }}">{{ s.status_label }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}<p class="muted">No open tasks.</p>{% endif %}
+  </section>
+
+  <section class="card dashboard-queue" id="needs-review">
+    <div class="panel-head"><h2>Waiting for operations</h2><span class="quiet-label">{% if attention_total > attention|length %}Showing {{ attention|length }} of {{ attention_total }}{% else %}Reported by you{% endif %}</span></div>
+    {% if attention %}
+      <div class="dashboard-list">
+        {% for s in attention %}
+          <a class="dashboard-list-item" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">
+            <div><strong>{{ s.recipient_name }}</strong><span class="muted mono">{{ s.tracking_number }}</span></div>
+            <span class="status-tag status-delivery-failed">{{ s.status_label }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}<p class="muted">No failed deliveries pending review.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card analytics-panel section-gap">
+  <div class="panel-head"><h2>Recently closed</h2><a class="table-link" href="{{ url_for('shipments.index') }}">Search deliveries →</a></div>
+  {% if recent %}
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Tracking</th><th>Recipient</th><th>Status</th><th>Signed by</th></tr></thead>
+        <tbody>
+          {% for s in recent %}
+            <tr>
+              <td><a class="table-link mono" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">{{ s.tracking_number }}</a></td>
+              <td>{{ s.recipient_name }}</td>
+              <td><span class="status-tag status-{{ s.status|replace('_','-') }}">{{ s.status_label }}</span></td>
+              <td>{{ s.received_by or '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}<p class="muted">Nothing closed yet.</p>{% endif %}
+</section>
+{% endblock %}
