@@ -6,6 +6,7 @@ from app.extensions import db
 from app.forms import CustomerForm
 from app.models import Customer
 from app.permissions import roles_required
+from app.services.customer_service import create_customer, update_customer, toggle_customer_status
 
 customers_bp = Blueprint("customers", __name__, url_prefix="/customers")
 
@@ -32,14 +33,12 @@ def index():
 def create():
     form = CustomerForm()
     if form.validate_on_submit():
-        customer = Customer(
-            name=form.name.data.strip(),
-            email=(form.email.data or "").strip().lower() or None,
-            phone=form.phone.data.strip(),
-            address=form.address.data.strip(),
+        create_customer(
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            address=form.address.data,
         )
-        db.session.add(customer)
-        db.session.commit()
         flash("Customer created successfully.", "success")
         return redirect(url_for("customers.index"))
     return render_template("customers/form.html", form=form, title="New Customer")
@@ -52,11 +51,13 @@ def edit(customer_id):
     customer = db.get_or_404(Customer, customer_id)
     form = CustomerForm(obj=customer)
     if form.validate_on_submit():
-        customer.name = form.name.data.strip()
-        customer.email = (form.email.data or "").strip().lower() or None
-        customer.phone = form.phone.data.strip()
-        customer.address = form.address.data.strip()
-        db.session.commit()
+        update_customer(
+            customer,
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            address=form.address.data,
+        )
         flash("Customer updated successfully.", "success")
         return redirect(url_for("customers.index"))
     return render_template("customers/form.html", form=form, title="Edit Customer")
@@ -67,7 +68,6 @@ def edit(customer_id):
 @roles_required("admin", "staff")
 def toggle(customer_id):
     customer = db.get_or_404(Customer, customer_id)
-    customer.active = not customer.active
-    db.session.commit()
+    toggle_customer_status(customer)
     flash("Customer status updated.", "success")
     return redirect(url_for("customers.index"))
