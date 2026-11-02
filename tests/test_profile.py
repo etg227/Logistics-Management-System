@@ -1,5 +1,7 @@
 """T02 — self-service password change for every authenticated role."""
 
+import pytest
+
 from app.extensions import db
 from app.models import User
 
@@ -8,13 +10,30 @@ NEW = "new-password-456"
 
 
 def _login(client, role, password=OLD):
+    with client.session_transaction() as session:
+        assert "_user_id" not in session
+
     response = client.post(
         "/login",
         data={"email": f"{role}@example.com", "password": password},
         follow_redirects=True,
     )
     assert response.status_code == 200
+    with client.session_transaction() as session:
+        assert session["_user_id"] == str(_user(client.application, role).id)
     return response
+
+
+def _logout(client):
+    response = client.post("/logout")
+    assert response.status_code == 302
+    assert response.location.endswith("/login")
+    with client.session_transaction() as session:
+        assert "_user_id" not in session
+
+    response = client.get("/profile/password")
+    assert response.status_code == 302
+    assert "/login" in response.location
 
 
 def _user(app, role):
@@ -29,13 +48,13 @@ def test_change_password_requires_login(client):
     assert "/login" in response.location
 
 
-def test_page_renders_for_every_role(app, client):
-    for role in ("staff", "driver", "admin"):
-        _login(client, role)
-        response = client.get("/profile/password")
-        assert response.status_code == 200
-        assert b"Change password" in response.data, role
-        client.get("/logout")
+@pytest.mark.parametrize("role", ("staff", "driver", "admin"))
+def test_page_renders_for_every_role(client, role):
+    _login(client, role)
+    response = client.get("/profile/password")
+    assert response.status_code == 200
+    assert b"Change password" in response.data
+    assert f"{role}@example.com".encode() in response.data
 
 
 def test_change_password_success(app, client):
@@ -52,8 +71,13 @@ def test_change_password_success(app, client):
     assert _user(app, "staff").check_password(NEW)
     assert not _user(app, "staff").check_password(OLD)
 
-    # The new password works for a fresh login.
-    client.get("/logout")
+    # A fresh login must reject the old password and accept the new one.
+    _logout(client)
+    response = client.post("/login", data={"email": "staff@example.com", "password": OLD})
+    assert response.status_code == 200
+    assert b"Invalid email or password" in response.data
+    with client.session_transaction() as session:
+        assert "_user_id" not in session
     assert _login(client, "staff", password=NEW).status_code == 200
 
 

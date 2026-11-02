@@ -16,6 +16,7 @@ SCRIPT = ROOT / "scripts" / "seed_demo.py"
 @pytest.fixture
 def seed_module(tmp_path, monkeypatch):
     db_path = tmp_path / "seed.db"
+    monkeypatch.setenv("SECRET_KEY", "seed-testing-only-secret")
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path.as_posix()}")
     monkeypatch.setattr(sys, "argv", ["seed_demo.py"])
 

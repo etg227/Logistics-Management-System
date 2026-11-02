@@ -1,5 +1,7 @@
 """Driver worklist: the /driver portal must show only the signed-in driver's work."""
 
+import pytest
+
 from app.extensions import db
 from app.models import Customer, Shipment, User
 from app.models.shipment import IN_TRANSIT, OUT_FOR_DELIVERY, PICKED_UP
@@ -9,12 +11,19 @@ from app.services.shipment_service import (
 
 
 def _login(client, role):
+    with client.session_transaction() as session:
+        assert "_user_id" not in session
+
     response = client.post(
         "/login",
         data={"email": f"{role}@example.com", "password": "test-password-123"},
         follow_redirects=True,
     )
     assert response.status_code == 200
+    with client.application.app_context():
+        user_id = db.session.scalar(db.select(User.id).where(User.email == f"{role}@example.com"))
+    with client.session_transaction() as session:
+        assert session["_user_id"] == str(user_id)
 
 
 def _extra_driver(app):
@@ -58,10 +67,10 @@ def test_driver_portal_requires_login(client):
     assert "/login" in response.location
 
 
-def test_staff_and_admin_cannot_open_driver_portal(client):
-    for role in ("staff", "admin"):
-        _login(client, role)
-        assert client.get("/driver").status_code == 403
+@pytest.mark.parametrize("role", ("staff", "admin"))
+def test_staff_and_admin_cannot_open_driver_portal(client, role):
+    _login(client, role)
+    assert client.get("/driver").status_code == 403
 
 
 def test_portal_lists_assigned_work_for_the_signed_in_driver(app, client):
