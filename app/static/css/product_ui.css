@@ -25,3 +25,6 @@ body{font-family:Inter,"Segoe UI",Arial,sans-serif;line-height:1.45;color:var(--
 @media(max-width:400px){.driver-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.driver-kpis .product-kpi:last-child{grid-column:1/-1}.tracking-id{font-size:19px!important}.product-brand{font-size:16px}.sidebar-nav .nav-link{padding:10px 8px}.app-content .page-heading{flex-wrap:wrap}.destination-address{font-size:19px}}
 
 .mobile-signout{background:none;border:0;color:#5d6c86;font-weight:700;font-size:12px;cursor:pointer;padding:10px 4px}.mobile-signout:hover{color:#c53d42}
+.driver-kpis.driver-kpis-wide{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1140px){.driver-kpis.driver-kpis-wide{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:400px){.driver-kpis.driver-kpis-wide .product-kpi:last-child{grid-column:auto}}
