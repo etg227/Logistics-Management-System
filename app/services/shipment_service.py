@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.extensions import db
-from app.models import Shipment, ShipmentEvent
+from app.models import Shipment, ShipmentEvent, Customer
 from app.models.shipment import (
     ASSIGNED, CANCELLED, DELIVERED, DELIVERY_FAILED, DRIVER_NEXT_STATUS,
     FAILURE_REASONS, OUT_FOR_DELIVERY, PENDING, RETURNED,
@@ -133,3 +133,35 @@ def cancel_shipment(shipment, actor_id):
     shipment.status = CANCELLED
     _record_event(shipment, actor_id, CANCELLED, "Shipment cancelled")
     db.session.commit()
+ 
+def populate_customer_choices(form, extra_customer_id=None):
+    customers = db.session.scalars(
+        db.select(Customer).where(Customer.active.is_(True)).order_by(Customer.name)
+    ).all()
+    
+    if extra_customer_id and all(c.id != extra_customer_id for c in customers):
+        old = db.session.get(Customer, extra_customer_id)
+        if old is not None:
+            customers.append(old)
+            
+    form.customer_id.choices = [(c.id, f"{c.name} (#{c.id})") for c in customers]
+
+
+def extract_shipment_form_data(form):
+    def trimmed(field):
+        return (field.data or "").strip() or None
+        
+    return dict(
+        recipient_name=form.recipient_name.data.strip(),
+        recipient_phone=form.recipient_phone.data.strip(),
+        origin=form.origin.data.strip(),
+        destination=form.destination.data.strip(),
+        description=trimmed(form.description),
+        weight_kg=form.weight_kg.data,
+        package_type=form.package_type.data or "parcel",
+        length_cm=form.length_cm.data,
+        width_cm=form.width_cm.data,
+        height_cm=form.height_cm.data,
+        delivery_instructions=trimmed(form.delivery_instructions),
+        expected_delivery_date=form.expected_delivery_date.data,
+    )
