@@ -11,6 +11,29 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/product_ui.css') }}">
   {% block head %}{% endblock %}
+  <style>
+  @media print {
+      body * {
+          visibility: hidden;
+      }
+      #print-label-area, #print-label-area * {
+          visibility: visible;
+      }
+      #print-label-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          margin: 0;
+          padding: 20px;
+          border: none !important;
+      }
+      .modal-overlay {
+          background: transparent !important;
+          position: static !important;
+      }
+  }
+  </style>
 </head>
 <body class="{{ 'app-authenticated' if current_user.is_authenticated else 'app-public' }}">
 {% if current_user.is_authenticated %}

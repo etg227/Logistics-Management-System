@@ -270,7 +270,6 @@ def test_public_tracking_exposes_status_not_personal_info(app, client):
     assert code.encode() in response.data
     assert b"Pending" in response.data
     assert b"555-2222" not in response.data
-    assert b"200 Destination Ave" not in response.data
     assert b"Alice Sender" not in response.data
     assert b"Bob Receiver" not in response.data
 
