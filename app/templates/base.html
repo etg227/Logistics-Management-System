@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/shipment_improvements.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/product_ui.css') }}">
+  {% block head %}{% endblock %}
 </head>
 <body class="{{ 'app-authenticated' if current_user.is_authenticated else 'app-public' }}">
 {% if current_user.is_authenticated %}
@@ -50,5 +51,6 @@
   {% block content %}{% endblock %}
 </main>
 {% if current_user.is_authenticated %}</div></div>{% endif %}
+{% block scripts %}{% endblock %}
 </body>
 </html>
