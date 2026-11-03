@@ -26,6 +26,29 @@
       {% else %}<p class="muted concise">{{ 'Delivery completed.' if shipment.status == 'delivered' else 'No action required at this stage.' }}</p>{% endif %}
     </section>
     <section class="card status-side"><h2>Current Status</h2><div class="status-side-row"><strong>{{ shipment.status_label }}</strong><small>Attempt {{ shipment.delivery_attempts or 0 }}</small></div>{% if shipment.current_location %}<div class="location-summary"><span>Last reported location</span><p>{{ shipment.current_location }}</p></div>{% endif %}</section>
+    <section class="card status-side" style="text-align: center;">
+      <h2>Shipment QR Code</h2>
+      <div id="qrcode" style="display: flex; justify-content: center; margin: 15px 0;"></div>
+      <p class="muted small">Scan to view public tracking</p>
+    </section>
   </aside>
 </div>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var trackingUrl = window.location.origin + "/tracking?q={{ shipment.tracking_number }}";
+  
+        new QRCode(document.getElementById("qrcode"), {
+            text: trackingUrl,
+            width: 140,
+            height: 140,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    });
+</script>
 {% endblock %}
