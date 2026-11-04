@@ -1,5 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.feature_forms import InventoryItemForm, WarehouseForm
@@ -49,14 +50,26 @@ def add_inventory(warehouse_id):
     warehouse = db.get_or_404(Warehouse, warehouse_id)
     form = InventoryItemForm()
     if form.validate_on_submit():
-        item = InventoryItem(warehouse_id=warehouse.id, sku=form.sku.data.strip().upper(),
-                             name=form.name.data.strip(), quantity=form.quantity.data,
-                             reorder_level=form.reorder_level.data,
-                             unit=form.unit.data.strip())
-        db.session.add(item)
-        db.session.commit()
-        flash("Inventory item added.", "success")
-    return redirect(url_for("warehouses.detail", warehouse_id=warehouse.id))
+        sku = form.sku.data.strip().upper()
+        duplicate = db.session.scalar(db.select(InventoryItem.id).where(
+            InventoryItem.warehouse_id == warehouse.id, InventoryItem.sku == sku))
+        if duplicate:
+            form.sku.errors.append("This SKU already exists in this warehouse.")
+        else:
+            item = InventoryItem(warehouse_id=warehouse.id, sku=sku,
+                                 name=form.name.data.strip(), quantity=form.quantity.data,
+                                 reorder_level=form.reorder_level.data,
+                                 unit=form.unit.data.strip())
+            db.session.add(item)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                form.sku.errors.append("This SKU already exists in this warehouse.")
+            else:
+                flash("Inventory item added.", "success")
+                return redirect(url_for("warehouses.detail", warehouse_id=warehouse.id))
+    return render_template("warehouses/detail.html", warehouse=warehouse, form=form), 400
 
 
 @warehouses_bp.post("/inventory/<int:item_id>/adjust")

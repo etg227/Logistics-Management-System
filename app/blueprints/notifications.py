@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
@@ -10,11 +10,12 @@ notifications_bp = Blueprint("notifications", __name__, url_prefix="/notificatio
 @notifications_bp.get("/")
 @login_required
 def index():
-    notifications = db.session.scalars(
+    pagination = db.paginate(
         db.select(Notification).where(Notification.user_id == current_user.id)
-        .order_by(Notification.created_at.desc(), Notification.id.desc())
-    ).all()
-    return render_template("notifications/index.html", notifications=notifications)
+        .order_by(Notification.created_at.desc(), Notification.id.desc()),
+        page=request.args.get("page", 1, type=int), per_page=10, error_out=False,
+    )
+    return render_template("notifications/index.html", pagination=pagination)
 
 
 @notifications_bp.post("/<int:notification_id>/read")

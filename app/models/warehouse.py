@@ -20,6 +20,9 @@ class Warehouse(db.Model):
 
 class InventoryItem(db.Model):
     __tablename__ = "inventory_items"
+    __table_args__ = (
+        db.UniqueConstraint("warehouse_id", "sku", name="uq_inventory_items_warehouse_sku"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     warehouse_id = db.Column(db.Integer, db.ForeignKey("warehouses.id"), nullable=False,

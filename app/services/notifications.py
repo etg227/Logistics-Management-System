@@ -27,9 +27,11 @@ def notify_shipment_event(shipment, status_label, note=None, actor_id=None):
                                   User.is_active.is_(True))
         ).all())
     title = f"Shipment {shipment.tracking_number} updated"
-    message = f"Status: {status_label}."
+    customer_message = f"Status: {status_label}."
+    internal_message = customer_message
     if note:
-        message += f" {note}"
+        internal_message += f" {note}"
     for user in {user.id: user for user in recipients}.values():
+        message = customer_message if user.role == "customer" else internal_message
         create_notification(user.id, title, message, category="shipment",
                             shipment_id=shipment.id)
