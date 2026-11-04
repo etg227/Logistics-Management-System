@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import current_user, login_required
+from flask_login import login_required
 
 from app.extensions import db
 from app.feature_forms import InvoiceForm
@@ -26,8 +26,11 @@ def _populate(form):
 @login_required
 @roles_required("admin", "staff")
 def index():
-    invoices = db.session.scalars(db.select(Invoice).order_by(Invoice.issued_at.desc())).all()
-    return render_template("invoices/index.html", invoices=invoices)
+    pagination = db.paginate(
+        db.select(Invoice).order_by(Invoice.issued_at.desc(), Invoice.id.desc()),
+        page=request.args.get("page", 1, type=int), per_page=10, error_out=False,
+    )
+    return render_template("invoices/index.html", pagination=pagination)
 
 
 @invoices_bp.route("/new", methods=["GET", "POST"])
@@ -71,8 +74,13 @@ def create():
 @roles_required("admin", "staff")
 def mark_paid(invoice_id):
     invoice = db.get_or_404(Invoice, invoice_id)
-    invoice.status = "paid"
-    invoice.paid_at = datetime.now(timezone.utc)
+    updated = db.session.execute(
+        db.update(Invoice).where(Invoice.id == invoice_id, Invoice.status != "paid")
+        .values(status="paid", paid_at=datetime.now(timezone.utc))
+    )
+    if updated.rowcount == 0:
+        flash("Invoice is already paid.", "info")
+        return redirect(url_for("invoices.index"))
     customer_users = db.session.scalars(db.select(User).where(
         User.customer_id == invoice.customer_id, User.is_active.is_(True))).all()
     for user in customer_users:
