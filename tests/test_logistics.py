@@ -264,13 +264,18 @@ def test_cannot_cancel_after_pickup(app, client):
 def test_public_tracking_exposes_status_not_personal_info(app, client):
     sid = make_shipment(app)
     with app.app_context():
-        code = db.session.get(Shipment, sid).tracking_number
+        shipment = db.session.get(Shipment, sid)
+        code = shipment.tracking_number
+        shipment.events[0].location = "Private Event Address"
+        db.session.commit()
     response = client.get(f"/tracking?q={code}")
     assert response.status_code == 200
     assert code.encode() in response.data
     assert b"Pending" in response.data
     assert b"555-2222" not in response.data
+    assert b"100 Main St" not in response.data
     assert b"200 Destination Ave" not in response.data
+    assert b"Private Event Address" not in response.data
     assert b"Alice Sender" not in response.data
     assert b"Bob Receiver" not in response.data
 

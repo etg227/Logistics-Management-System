@@ -1,10 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Track Package | CargoFlow{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<style>
+  #map { height: 400px; width: 100%; border-radius: 8px; margin-top: 20px; margin-bottom: 20px; z-index: 1; }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="page-heading">
   <div><div class="eyebrow">TRACK YOUR PARCEL</div><h1>Shipment Tracking</h1>
     <p class="muted">Enter your tracking number to check delivery progress.</p></div>
 </section>
+
 <div class="card tracking-search">
   <form class="filter-bar" method="GET" action="{{ url_for('tracking.index') }}">
     <label class="sr-only" for="q">Tracking number</label>
@@ -12,21 +22,85 @@
     <button type="submit" class="btn btn-primary">Track</button>
   </form>
 </div>
-{% if not_found %}<div class="alert alert-warning section-gap">No shipment found for that tracking number.</div>{% endif %}
+
+{% if not_found %}
+<div class="alert alert-warning section-gap">No shipment found for that tracking number.</div>
+{% endif %}
+
 {% if shipment %}
 <div class="card section-gap">
   <h2 class="mono tracking-heading">{{ shipment.tracking_number }}</h2>
   <p><span class="status-tag {% if shipment.status == 'delivery_failed' %}status-failed{% elif shipment.status == 'delivered' %}status-delivered{% endif %}">{{ shipment.status_label }}</span></p>
-  {% if shipment.status == 'delivery_failed' %}<p class="shipment-warning">There is a delivery issue. The carrier is reviewing the next step.</p>{% endif %}
+
+  {% if shipment.status == 'delivery_failed' %}
+  <p class="shipment-warning">There is a delivery issue. The carrier is reviewing the next step.</p>
+  {% endif %}
+
+  <h3>Route Map</h3>
+  <div id="map"></div>
+
   <h3>Delivery History</h3>
   <ol class="timeline">
     {% for event in shipment.events|reverse %}
       <li><strong>{{ event.status_label }}</strong>
         <div class="muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
-        {% if event.location %}<div class="muted small">{{ event.location }}</div>{% endif %}
       </li>
     {% endfor %}
   </ol>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  {% if shipment %}
+  const originCoords = {{ origin_coordinates|tojson }};
+  const destCoords = {{ destination_coordinates|tojson }};
+
+  var map = L.map('map').setView(originCoords, 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  var greenIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+  });
+  var redIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+  });
+
+  L.marker(originCoords, {icon: greenIcon}).addTo(map)
+      .bindPopup('<b>Origin (Depot)</b>');
+
+  L.marker(destCoords, {icon: redIcon}).addTo(map)
+      .bindPopup('<b>Destination</b>');
+
+  if (originCoords && destCoords) {
+    L.Routing.control({
+        waypoints: [
+            L.latLng(originCoords[0], originCoords[1]),
+            L.latLng(destCoords[0], destCoords[1])
+        ],
+        routeWhileDragging: false,
+        addWaypoints: false,
+        show: false,
+        lineOptions: {
+            styles: [{ color: '#0056b3', weight: 5 }]
+        },
+        createMarker: function() { return null; }
+    }).addTo(map);
+
+    var bounds = L.latLngBounds([originCoords, destCoords]);
+    map.fitBounds(bounds, { padding: [50, 50] });
+}
+
+  {% endif %}
+</script>
 {% endblock %}
