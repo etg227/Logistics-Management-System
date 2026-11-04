@@ -37,6 +37,9 @@ class User(UserMixin, db.Model):
         default="staff"
     )
 
+    customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=True,
+                            index=True)
+
     is_active = db.Column(
         db.Boolean,
         nullable=False,
@@ -48,6 +51,11 @@ class User(UserMixin, db.Model):
         nullable=False,
         default=lambda: datetime.now(timezone.utc)
     )
+
+    customer = db.relationship("Customer", back_populates="portal_users",
+                               foreign_keys=[customer_id])
+    notifications = db.relationship("Notification", back_populates="user",
+                                    cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

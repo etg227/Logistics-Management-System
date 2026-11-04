@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Notifications | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">INBOX</div><h1>Notifications</h1><p class="muted">Updates about shipments, billing and operations.</p></div><form method="POST" action="{{ url_for('notifications.mark_all_read') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline">Mark all read</button></form></section>
+<section class="card"><div class="dashboard-list">{% for notification in notifications %}<div class="dashboard-list-item {% if not notification.is_read %}notification-unread{% endif %}"><div><strong>{{ notification.title }}</strong><span class="muted">{{ notification.message }}</span><small class="muted">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</small></div>{% if not notification.is_read %}<form method="POST" action="{{ url_for('notifications.mark_read', notification_id=notification.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline btn-small">Mark read</button></form>{% endif %}</div>{% else %}<p class="muted">You have no notifications.</p>{% endfor %}</div></section>
+{% endblock %}

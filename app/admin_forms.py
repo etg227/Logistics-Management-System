@@ -7,6 +7,7 @@ ROLE_OPTIONS = [
     ("admin", "Admin"),
     ("staff", "Staff"),
     ("driver", "Driver"),
+    ("customer", "Customer"),
 ]
 
 
@@ -14,6 +15,9 @@ class UserDetailsForm(FlaskForm):
     full_name = StringField("Full name", validators=[DataRequired(), Length(min=1, max=100)])
     email = StringField("Email", validators=[DataRequired(), Email(), Length(max=255)])
     role = SelectField("Role", choices=ROLE_OPTIONS, validators=[DataRequired()])
+    customer_id = SelectField("Customer account", coerce=int,
+                              choices=[(0, "Not linked")], default=0,
+                              validate_choice=False, validators=[])
     submit = SubmitField("Save user")
 
 

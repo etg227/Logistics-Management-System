@@ -31,7 +31,7 @@
 <div class="card section-gap">
   <h2 class="mono tracking-heading">{{ shipment.tracking_number }}</h2>
   <p><span class="status-tag {% if shipment.status == 'delivery_failed' %}status-failed{% elif shipment.status == 'delivered' %}status-delivered{% endif %}">{{ shipment.status_label }}</span></p>
-  
+
   {% if shipment.status == 'delivery_failed' %}
   <p class="shipment-warning">There is a delivery issue. The carrier is reviewing the next step.</p>
   {% endif %}
@@ -44,7 +44,6 @@
     {% for event in shipment.events|reverse %}
       <li><strong>{{ event.status_label }}</strong>
         <div class="muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
-        {% if event.location %}<div class="muted small">{{ event.location }}</div>{% endif %}
       </li>
     {% endfor %}
   </ol>
@@ -57,28 +56,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   {% if shipment %}
-  const locationCoords = {
-      "kwun tong": [22.3122, 114.2250],      
-      "central": [22.2819, 114.1582],        
-      "tsim sha tsui": [22.2988, 114.1722],  
-      "sha tin": [22.3771, 114.1974],        
-      "mong kok": [22.3193, 114.1694],       
-      "sham shui po": [22.3307, 114.1622],   
-      "causeway bay": [22.2805, 114.1847],   
-      "tsuen wan": [22.3707, 114.1140],      
-      "default": [22.3193, 114.1694]         
-  };
-
-  let originText = "{{ shipment.origin }}".toLowerCase();
-  let destText = "{{ shipment.destination }}".toLowerCase();
-  
-  let originCoords = locationCoords.default;
-  let destCoords = locationCoords.default;
-
-  for (let key in locationCoords) {
-      if (originText.includes(key)) originCoords = locationCoords[key];
-      if (destText.includes(key)) destCoords = locationCoords[key];
-  }
+  const originCoords = {{ origin_coordinates|tojson }};
+  const destCoords = {{ destination_coordinates|tojson }};
 
   var map = L.map('map').setView(originCoords, 12);
 
@@ -98,10 +77,10 @@
   });
 
   L.marker(originCoords, {icon: greenIcon}).addTo(map)
-      .bindPopup('<b>Origin (Depot)</b><br>{{ shipment.origin }}');
+      .bindPopup('<b>Origin (Depot)</b>');
 
   L.marker(destCoords, {icon: redIcon}).addTo(map)
-      .bindPopup('<b>Destination</b><br>{{ shipment.destination }}');
+      .bindPopup('<b>Destination</b>');
 
   if (originCoords && destCoords) {
     L.Routing.control({
@@ -109,11 +88,11 @@
             L.latLng(originCoords[0], originCoords[1]),
             L.latLng(destCoords[0], destCoords[1])
         ],
-        routeWhileDragging: false, 
-        addWaypoints: false,       
-        show: false,              
+        routeWhileDragging: false,
+        addWaypoints: false,
+        show: false,
         lineOptions: {
-            styles: [{ color: '#0056b3', weight: 5 }] 
+            styles: [{ color: '#0056b3', weight: 5 }]
         },
         createMarker: function() { return null; }
     }).addTo(map);
@@ -122,10 +101,6 @@
     map.fitBounds(bounds, { padding: [50, 50] });
 }
 
-  if (originCoords[0] !== destCoords[0] || originCoords[1] !== destCoords[1]) {
-      var bounds = L.latLngBounds(latlngs);
-      map.fitBounds(bounds, { padding: [50, 50] });
-  }
   {% endif %}
 </script>
 {% endblock %}

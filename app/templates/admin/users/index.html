@@ -11,7 +11,7 @@
     <input type="search" class="form-control" name="q" value="{{ q }}" placeholder="Search name or email" aria-label="Search users">
     <select name="role" class="form-control" aria-label="Filter by role">
       <option value="">All roles</option>
-      {% for key in ['admin', 'staff', 'driver'] %}<option value="{{ key }}" {% if role == key %}selected{% endif %}>{{ key|capitalize }}</option>{% endfor %}
+      {% for key in ['admin', 'staff', 'driver', 'customer'] %}<option value="{{ key }}" {% if role == key %}selected{% endif %}>{{ key|capitalize }}</option>{% endfor %}
     </select>
     <select name="status" class="form-control" aria-label="Filter by status">
       <option value="">All statuses</option>

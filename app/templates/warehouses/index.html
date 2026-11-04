@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Warehouses | CargoFlow{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">INVENTORY OPERATIONS</div><h1>Warehouses</h1><p class="muted">Manage storage locations and stock levels.</p></div><a class="btn btn-primary" href="{{ url_for('warehouses.create') }}">+ New Warehouse</a></section>
+<section class="card"><div class="table-scroll"><table class="data-table"><thead><tr><th>Name</th><th>Location</th><th>Capacity</th><th>Stock lines</th><th>Action</th></tr></thead><tbody>{% for warehouse in warehouses %}<tr><td><strong>{{ warehouse.name }}</strong></td><td>{{ warehouse.location }}</td><td>{{ warehouse.capacity }}</td><td>{{ warehouse.inventory|length }}</td><td><a class="table-link" href="{{ url_for('warehouses.detail', warehouse_id=warehouse.id) }}">Manage inventory</a></td></tr>{% else %}<tr><td colspan="5" class="muted">No warehouses yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

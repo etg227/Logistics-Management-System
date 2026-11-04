@@ -7,7 +7,7 @@
 <section class="card form-card">
   <form method="POST" novalidate>
     {{ form.hidden_tag() }}
-    {% for field in [form.full_name, form.email, form.role] %}
+    {% for field in [form.full_name, form.email, form.role, form.customer_id] %}
       <div class="form-group">
         {{ field.label(class="form-label") }}
         {{ field(class="form-control") }}

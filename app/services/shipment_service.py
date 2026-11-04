@@ -7,7 +7,9 @@ from app.models import Shipment, ShipmentEvent
 from app.models.shipment import (
     ASSIGNED, CANCELLED, DELIVERED, DELIVERY_FAILED, DRIVER_NEXT_STATUS,
     FAILURE_REASONS, OUT_FOR_DELIVERY, PENDING, RETURNED,
+    STATUS_LABELS,
 )
+from app.services.notifications import notify_shipment_event
 
 
 class WorkflowError(ValueError):
@@ -30,6 +32,8 @@ def _record_event(shipment, actor_id, status, note, location=""):
         shipment_id=shipment.id, changed_by_id=actor_id,
         status=status, note=note, location=location or None,
     ))
+    notify_shipment_event(shipment, STATUS_LABELS.get(status, status), note,
+                          actor_id=actor_id)
 
 
 def create_shipment(*, customer_id, created_by_id, **fields):
