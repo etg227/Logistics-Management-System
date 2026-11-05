@@ -23,4 +23,8 @@
 </div>
   <section class="card analytics-panel section-gap"><div class="panel-head"><h2>Recent Shipments</h2><a class="table-link" href="{{ url_for('shipments.index') }}">See all →</a></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Tracking</th><th>Recipient</th><th>Status</th></tr></thead><tbody>{% for s in recent %}<tr><td><a class="table-link mono" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">{{ s.tracking_number }}</a></td><td>{{ s.recipient_name }}</td><td>{{ s.status_label }}</td></tr>{% else %}<tr><td colspan="3">No shipments yet.</td></tr>{% endfor %}</tbody></table></div></section>
 {% endif %}
+<section class="product-kpis section-gap" aria-label="Delivery punctuality">
+  <a class="card product-kpi interactive-kpi" href="{{ url_for('shipments.index', overdue=1) }}"><span>Overdue Shipments</span><strong>{{ stats.overdue }}</strong><small>Expected date has passed (UTC)</small></a>
+  <div class="card product-kpi"><span>On-time Delivery Rate</span><strong>{{ '%.1f%%'|format(stats.on_time_rate) if stats.on_time_rate is not none else 'N/A' }}</strong><small>{{ stats.on_time }} of {{ stats.measured_deliveries }} delivered shipments with dates</small></div>
+</section>
 {% endblock %}

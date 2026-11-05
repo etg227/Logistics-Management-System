@@ -75,6 +75,11 @@ class Shipment(db.Model):
                              order_by="ShipmentEvent.id", cascade="all, delete-orphan")
 
     @property
+    def is_overdue(self):
+        from app.services.delivery_monitoring import is_overdue
+        return is_overdue(self)
+
+    @property
     def status_label(self):
         return STATUS_LABELS.get(self.status, self.status)
 
