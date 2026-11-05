@@ -15,6 +15,7 @@ from app.permissions import roles_required
 from app.services.shipment_service import (
     WorkflowError, advance_delivery, assign_driver, cancel_shipment,
     create_shipment, mark_delivery_failed, resolve_failed_delivery,
+    populate_customer_choices, extract_shipment_form_data, 
 )
 
 shipments_bp = Blueprint("shipments", __name__, url_prefix="/shipments")
@@ -116,7 +117,7 @@ def index():
 @roles_required("admin", "staff")
 def create():
     form = ShipmentForm()
-    _select_customers(form)
+    populate_customer_choices(form)
     if form.validate_on_submit():
         customer = db.session.get(Customer, form.customer_id.data)
         if customer is None or not customer.active:
@@ -124,7 +125,7 @@ def create():
         else:
             shipment = create_shipment(
                 customer_id=customer.id, created_by_id=current_user.id,
-                **_clean_form_fields(form),
+                **extract_shipment_form_data(form),
             )
             flash(f"Shipment {shipment.tracking_number} created.", "success")
             return redirect(url_for("shipments.detail", shipment_id=shipment.id))
@@ -182,14 +183,14 @@ def edit(shipment_id):
         flash("Only pending shipments can be edited.", "warning")
         return redirect(url_for("shipments.detail", shipment_id=shipment.id))
     form = ShipmentForm(obj=shipment)
-    _select_customers(form, shipment.customer_id)
+    populate_customer_choices(form, shipment.customer_id)
     if form.validate_on_submit():
         customer = db.session.get(Customer, form.customer_id.data)
         if customer is None or not customer.active:
             form.customer_id.errors.append("Please select an active customer.")
         else:
             shipment.customer_id = customer.id
-            for key, value in _clean_form_fields(form).items():
+            for key, value in extract_shipment_form_data(form).items():
                 setattr(shipment, key, value)
             db.session.commit()
             flash("Shipment details updated.", "success")
