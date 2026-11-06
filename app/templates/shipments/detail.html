@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ shipment.tracking_number }} | CargoFlow{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shipment_label.css') }}">
+{% endblock %}
 {% block content %}
 <div class="page-trail"><a href="{{ url_for('shipments.index') }}">Shipments</a><span aria-hidden="true">/</span><span>Shipment detail</span></div>
-<section class="shipment-topbar"><div><span class="eyebrow">SHIPMENT DETAILS</span><h1 class="tracking-id">{{ shipment.tracking_number }}</h1><span class="status-tag status-{{ shipment.status|replace('_','-') }}">{{ shipment.status_label }}</span></div>{% if shipment.status == 'pending' %}<a class="btn btn-outline" href="{{ url_for('shipments.edit', shipment_id=shipment.id) }}">Edit Shipment</a>{% endif %}</section>
+<section class="shipment-topbar"><div><span class="eyebrow">SHIPMENT DETAILS</span><h1 class="tracking-id">{{ shipment.tracking_number }}</h1><span class="status-tag status-{{ shipment.status|replace('_','-') }}">{{ shipment.status_label }}</span></div><div class="shipment-label-actions"><button type="button" class="btn btn-primary" id="open-print-label">Print Label</button>{% if shipment.status == 'pending' %}<a class="btn btn-outline" href="{{ url_for('shipments.edit', shipment_id=shipment.id) }}">Edit Shipment</a>{% endif %}</div></section>
 {% if shipment.status == 'delivery_failed' %}<div class="action-alert"><strong>Delivery failed</strong><span>Resolve this shipment before another delivery attempt.</span></div>{% endif %}
 <div class="shipment-detail-layout">
   <div class="shipment-detail-main">
@@ -26,6 +29,37 @@
       {% else %}<p class="muted concise">{{ 'Delivery completed.' if shipment.status == 'delivered' else 'No action required at this stage.' }}</p>{% endif %}
     </section>
     <section class="card status-side"><h2>Current Status</h2><div class="status-side-row"><strong>{{ shipment.status_label }}</strong><small>Attempt {{ shipment.delivery_attempts or 0 }}</small></div>{% if shipment.current_location %}<div class="location-summary"><span>Last reported location</span><p>{{ shipment.current_location }}</p></div>{% endif %}</section>
+    <section class="card status-side shipment-qr-card">
+      <h2>Shipment QR Code</h2>
+      <div id="qrcode" data-shipment-qr></div>
+      <a id="shipment-tracking-link" class="table-link" href="{{ url_for('tracking.index', q=shipment.tracking_number) }}">Open public tracking</a>
+      <p class="muted small">Scan to view public tracking.</p>
+    </section>
   </aside>
 </div>
+<dialog id="print-modal" class="shipment-label-dialog" aria-labelledby="print-label-title">
+  <h2 id="print-label-title" class="shipment-label-controls">Shipment label preview</h2>
+  <section id="print-label-area" aria-label="Shipment label">
+    <h2>CARGOFLOW EXPRESS</h2>
+    <p class="label-tracking"><strong>{{ shipment.tracking_number }}</strong></p>
+    <div id="qrcode-print" data-shipment-qr></div>
+    <dl>
+      <dt>TO</dt><dd>{{ shipment.recipient_name }}</dd>
+      <dt>TEL</dt><dd>{{ shipment.recipient_phone }}</dd>
+      <dt>ADDR</dt><dd>{{ shipment.destination }}</dd>
+      <dt>Weight</dt><dd>{{ shipment.weight_kg }} kg</dd>
+      <dt>Package type</dt><dd>{{ shipment.package_type_label }}</dd>
+    </dl>
+  </section>
+  <p id="shipment-qr-error" role="alert" hidden>QR code unavailable. Reload the page before printing.</p>
+  <div class="shipment-label-controls shipment-label-actions">
+    <button type="button" class="btn btn-outline" id="close-print-label">Cancel</button>
+    <button type="button" class="btn btn-primary" id="confirm-label-print" disabled>Confirm &amp; Print</button>
+  </div>
+</dialog>
+<noscript><p class="muted">Enable JavaScript to generate QR codes and print labels.</p></noscript>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='vendor/qrcode.min.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/shipment_label.js') }}"></script>
 {% endblock %}

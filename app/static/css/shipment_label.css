@@ -1,0 +1,20 @@
+.shipment-label-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.shipment-qr-card { text-align: center; }
+[data-shipment-qr] { display: flex; justify-content: center; width: fit-content; max-width: 100%; padding: 16px; margin: 16px auto; background: #fff; }
+[data-shipment-qr] canvas, [data-shipment-qr] img { max-width: 100%; }
+.shipment-label-dialog { width: min(480px, calc(100vw - 32px)); max-height: 90vh; overflow: auto; padding: 20px; border: 0; border-radius: 12px; }
+.shipment-label-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+#print-label-area { box-sizing: border-box; padding: 16px; border: 1px dashed #000; color: #000; background: #fff; font: 14px/1.4 Arial, sans-serif; overflow-wrap: anywhere; }
+#print-label-area h2, .label-tracking { text-align: center; margin: 0 0 12px; }
+#print-label-area h2 { font-size: 22px; }
+#print-label-area dt { font-weight: bold; margin-top: 8px; }
+#print-label-area dd { margin: 0; }
+.shipment-label-controls { margin-top: 16px; }
+@media print {
+    body.shipment-label-print { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+    body.shipment-label-print > :not(#print-modal) { display: none !important; }
+    body.shipment-label-print #print-modal { display: block !important; position: static !important; margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: none !important; max-height: none !important; overflow: visible !important; border: 0 !important; box-shadow: none !important; }
+    body.shipment-label-print #print-modal::backdrop { background: transparent; }
+    body.shipment-label-print .shipment-label-controls, body.shipment-label-print #shipment-qr-error { display: none !important; }
+    body.shipment-label-print #print-label-area { width: 100mm; max-width: 100%; border: 1px solid #000; break-inside: avoid; }
+}
