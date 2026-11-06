@@ -1,9 +1,11 @@
-from flask import Blueprint, abort, render_template, request
+from flask import Blueprint, abort, render_template, request, flash, redirect, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Invoice, Notification, Shipment
 from app.permissions import roles_required
+from app.forms import ShipmentForm
+from app.services.shipment_service import create_shipment, extract_shipment_form_data
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 
@@ -31,3 +33,21 @@ def index():
     return render_template("portal/index.html", shipments_pagination=shipments_pagination,
                            invoices_pagination=invoices_pagination,
                            notifications=notifications)
+
+@portal_bp.route("/shipments/new", methods=["GET", "POST"])
+@login_required
+@roles_required("customer")
+def create_shipment_request():
+    if current_user.customer_id is None:
+        abort(403)
+    form = ShipmentForm()
+    form._fields.pop('customer_id', None)
+    if form.validate_on_submit():
+        create_shipment(
+            customer_id=current_user.customer_id,
+            created_by_id=current_user.id,
+            **extract_shipment_form_data(form)
+        )
+        flash("Your shipment request has been submitted and is awaiting confirmation.", "success")
+        return redirect(url_for("portal.index"))
+    return render_template("portal/create_shipment.html", form=form)

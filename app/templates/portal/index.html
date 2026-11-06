@@ -1,7 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Customer Portal | CargoFlow{% endblock %}
 {% block content %}
-<section class="page-heading"><div><div class="eyebrow">CUSTOMER PORTAL</div><h1>Welcome, {{ current_user.customer.name }}</h1><p class="muted">View your shipments, invoices and service updates.</p></div><a class="btn btn-outline" href="{{ url_for('tracking.index') }}">Track a shipment</a></section>
+<section class="page-heading">
+  <div>
+    <div class="eyebrow">CUSTOMER PORTAL</div>
+    <h1>Welcome, {{ current_user.customer.name }}</h1>
+    <p class="muted">View your shipments, invoices and service updates.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="{{ url_for('portal.create_shipment_request') }}">+ Book New Shipment</a>
+    <a class="btn btn-outline" href="{{ url_for('tracking.index') }}">Track a shipment</a>
+  </div>
+</section>
 <div class="product-dashboard-grid">
   <section class="card">
     <div class="panel-head"><h2>My Shipments</h2></div>
