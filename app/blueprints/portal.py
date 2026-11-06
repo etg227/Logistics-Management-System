@@ -48,6 +48,7 @@ def create_shipment_request():
             created_by_id=current_user.id,
             **extract_shipment_form_data(form)
         )
-        flash("Your shipment request has been submitted and is awaiting confirmation.", "success")
+        flash(f"Shipment {shipment.tracking_number} booked. "
+              "Our team will assign a driver shortly.", "success")
         return redirect(url_for("portal.index"))
     return render_template("portal/create_shipment.html", form=form)
