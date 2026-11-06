@@ -6,7 +6,17 @@
   <form method="POST" novalidate>
     {{ form.hidden_tag() }}
     <h2>Recipient Details</h2>
-        <div class="shipment-form-grid">
+    <div class="shipment-form-grid">
+      {% for field in [form.recipient_name, form.recipient_phone, form.origin, form.destination] %}
+        <div class="form-group {% if field.name in ['origin', 'destination'] %}full-width{% endif %}">
+          {{ field.label(class='form-label') }}{{ field(class='form-control') }}
+          {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <hr class="soft-divider">
+    <h2>Package Information</h2>
+    <div class="shipment-form-grid">
       {% for field in [form.package_type, form.weight_kg, form.length_cm, form.width_cm, form.height_cm] %}
         <div class="form-group">
           {{ field.label(class='form-label') }}{{ field(class='form-control') }}
@@ -24,4 +34,7 @@
         {% for error in form.expected_delivery_date.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
       </div>
     </div>
+    {{ form.submit(class='btn btn-primary') }}
+  </form>
+</div>
 {% endblock %}
