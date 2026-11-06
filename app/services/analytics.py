@@ -9,6 +9,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from sqlalchemy import func
 
 from app.extensions import db
+from app.services.delivery_monitoring import delivery_metrics, overdue_conditions
 from app.models import Shipment, ShipmentEvent, User
 from app.models.shipment import (
     ASSIGNED, CANCELLED, DELIVERED, DELIVERY_FAILED, IN_TRANSIT,
@@ -28,7 +29,7 @@ def utc_day_range(from_date=None, to_date=None):
 
 
 def shipment_conditions(*, from_date=None, to_date=None, status=None,
-                        driver_id=None):
+                        driver_id=None, overdue=False):
     conditions = []
     start, end = utc_day_range(from_date, to_date)
     if start is not None:
@@ -39,6 +40,8 @@ def shipment_conditions(*, from_date=None, to_date=None, status=None,
         conditions.append(Shipment.status == status)
     if driver_id is not None:
         conditions.append(Shipment.driver_id == driver_id)
+    if overdue:
+        conditions.extend(overdue_conditions())
     return conditions
 
 
@@ -67,6 +70,7 @@ def summary_from_conditions(conditions=(), *, actor_id=None):
     returned = counts[RETURNED]
     completed = delivered + returned
     return {
+        **delivery_metrics(conditions),
         "total": sum(counts.values()),
         "pending": counts[PENDING] + counts[ASSIGNED],
         "in_transit": sum(counts[s] for s in TRANSIT_STATUSES),

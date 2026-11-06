@@ -49,13 +49,46 @@ flask --app run create-user --role admin
 Optional: load demo data so the pages are not empty while you click around.
 
 ```bash
-python scripts/seed_demo.py                  # three staff/driver accounts, eight shipments covering every status
+python scripts/seed_demo.py                  # three staff/driver accounts, 8 workflow + 7 report demo shipments
 python scripts/seed_demo.py --reset-passwords
 ```
 
-The seeded accounts use the password `demo12345`. The script never creates an
-admin account — use `create-user` above for that. It is safe to re-run: it only
-adds what is missing.
+New seeded accounts use the password `demo12345`. Existing passwords are kept
+unless `--reset-passwords` is supplied. The script never creates an admin account
+— use `create-user` above for that. It is safe to re-run: it only adds what is
+missing and keeps existing shipment dates, statuses and tracking numbers.
+
+#### Report demo data
+
+The **DEMO Report Acceptance** customer has seven synthetic shipment snapshots.
+Recipient names begin with `DEMO`; newly created tracking numbers begin with
+`DEMO-RPT-`. Driver 1 is `driver@example.com` (Chan Tai Man), and Driver 2 is
+`driver2@example.com` (Leung Mei Mei).
+
+Dates below are relative to the **first seed run's UTC date**:
+
+| Demo suffix | Status | Expected delivery | Created | Driver |
+|---|---|---|---|---|
+| LATE-A | Assigned | Yesterday | Today | 1 |
+| LATE-B | Assigned | Two days ago | Today | 2 |
+| OLD-LATE-A | Assigned | Yesterday | Seven days ago | 1 |
+| TODAY-A | Assigned | Today | Today | 1 |
+| FUTURE | Pending | Tomorrow | Today | Unassigned |
+| ON-TIME | Delivered | Today; delivered today | Today | 1 |
+| LATE-DONE | Delivered | Yesterday; delivered today | Today | 2 |
+
+To check report filters, sign in as Admin or Staff and open **Reports**:
+
+1. On the first seed date, **Overdue only** includes the three LATE-A, LATE-B and
+   OLD-LATE-A fixtures. Due-today and delivered fixtures are excluded.
+2. Select Driver 1, status **Assigned**, and set **From (UTC)** and **To (UTC)**
+   to the first seed date. These fields filter the shipment's creation date.
+3. Click **Overdue Shipments**. The filters should remain selected and the demo
+   results should contain only LATE-A. **Download CSV** should keep that scope.
+
+Other existing shipments may also match the filters. Re-running the seed does
+not refresh demo dates: due-today shipments can become overdue on later days.
+The snapshots are labelled demo data, not reconstructed delivery history.
 
 ### 4. Run the app
 
