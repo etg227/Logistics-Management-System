@@ -57,7 +57,7 @@ def create_app(test_config=None):
             user = db.session.get(User, int(user_id))
         except (TypeError, ValueError):
             return None
-        if user is not None and user.is_active:
+        if user is not None and user.can_sign_in:
             return user
         return None
 

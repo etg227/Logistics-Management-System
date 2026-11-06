@@ -68,7 +68,7 @@ def login():
 
         if (
             user is not None
-            and user.is_active
+            and user.can_sign_in
             and user.check_password(form.password.data)
         ):
             login_user(user)
