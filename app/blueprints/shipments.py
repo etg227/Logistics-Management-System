@@ -12,6 +12,7 @@ from app.models.shipment import (
     PENDING, STATUS_LABELS,
 )
 from app.permissions import roles_required
+from app.services.delivery_monitoring import overdue_conditions
 from app.services.shipment_service import (
     WorkflowError, advance_delivery, assign_driver, cancel_shipment,
     create_shipment, mark_delivery_failed, resolve_failed_delivery,
@@ -75,8 +76,11 @@ def index():
     to_date = request.args.get("to_date", "").strip()
     driver_id = request.args.get("driver_id", type=int)
     sort = request.args.get("sort", "newest")
+    overdue = request.args.get("overdue") == "1"
 
     stmt = db.select(Shipment)
+    if overdue:
+        stmt = stmt.where(*overdue_conditions())
     if current_user.role == "driver":
         stmt = stmt.where(Shipment.driver_id == current_user.id)
     elif driver_id is not None and driver_id > 0:
@@ -104,11 +108,11 @@ def index():
                                      .order_by(User.full_name)).all()
     if current_user.role == "driver":
         return render_template("shipments/driver_index.html", pagination=pagination,
-                               statuses=STATUS_LABELS, q=q, status=status)
+                               statuses=STATUS_LABELS, q=q, status=status, overdue=overdue)
     return render_template(
         "shipments/index.html", pagination=pagination, statuses=STATUS_LABELS,
         q=q, status=status, from_date=from_date, to_date=to_date,
-        driver_id=driver_id, drivers=drivers, sort=sort,
+        driver_id=driver_id, drivers=drivers, sort=sort, overdue=overdue,
     )
 
 

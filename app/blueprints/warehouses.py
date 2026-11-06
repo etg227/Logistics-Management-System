@@ -1,14 +1,26 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.feature_forms import InventoryItemForm, WarehouseForm
-from app.models import InventoryItem, User, Warehouse
+from app.models import InventoryItem, InventoryMovement, Warehouse
 from app.permissions import roles_required
-from app.services.notifications import create_notification
+from app.services.inventory_service import InventoryError, change_stock, record_opening_balance
 
 warehouses_bp = Blueprint("warehouses", __name__, url_prefix="/warehouses")
+
+
+def _render_detail(warehouse, form):
+    movements = db.paginate(
+        db.select(InventoryMovement).join(InventoryItem)
+        .where(InventoryItem.warehouse_id == warehouse.id)
+        .options(joinedload(InventoryMovement.item), joinedload(InventoryMovement.actor))
+        .order_by(InventoryMovement.id.desc()),
+        page=request.args.get("history_page", 1, type=int), per_page=20, error_out=False)
+    return render_template("warehouses/detail.html", warehouse=warehouse, form=form,
+                           movements=movements)
 
 
 @warehouses_bp.get("/")
@@ -40,7 +52,7 @@ def create():
 def detail(warehouse_id):
     warehouse = db.get_or_404(Warehouse, warehouse_id)
     form = InventoryItemForm()
-    return render_template("warehouses/detail.html", warehouse=warehouse, form=form)
+    return _render_detail(warehouse, form)
 
 
 @warehouses_bp.post("/<int:warehouse_id>/inventory/new")
@@ -62,6 +74,7 @@ def add_inventory(warehouse_id):
                                  unit=form.unit.data.strip())
             db.session.add(item)
             try:
+                record_opening_balance(item, current_user.id)
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
@@ -69,7 +82,7 @@ def add_inventory(warehouse_id):
             else:
                 flash("Inventory item added.", "success")
                 return redirect(url_for("warehouses.detail", warehouse_id=warehouse.id))
-    return render_template("warehouses/detail.html", warehouse=warehouse, form=form), 400
+    return _render_detail(warehouse, form), 400
 
 
 @warehouses_bp.post("/inventory/<int:item_id>/adjust")
@@ -79,21 +92,22 @@ def adjust_inventory(item_id):
     item = db.get_or_404(InventoryItem, item_id)
     try:
         quantity = int((request.form.get("quantity") or "").strip())
-        if quantity < 0:
-            raise ValueError
-    except ValueError:
-        flash("Quantity must be a non-negative whole number.", "danger")
-    else:
-        item.quantity = quantity
-        if item.quantity <= item.reorder_level:
-            operations_users = db.session.scalars(db.select(User).where(
-                User.role.in_(["admin", "staff"]), User.is_active.is_(True))).all()
-            for user in operations_users:
-                create_notification(
-                    user.id, "Low inventory alert",
-                    f"{item.name} ({item.sku}) at {item.warehouse.name} is at {item.quantity} {item.unit}.",
-                    category="inventory",
-                )
+        operation = request.form.get("operation", "adjustment")
+        expected_version = None
+        if operation == "adjustment":
+            raw_version = (request.form.get("expected_version") or "").strip()
+            if not raw_version.isascii() or not raw_version.isdecimal() or len(raw_version) > 18:
+                raise InventoryError("Reload the inventory page before setting the balance.")
+            expected_version = int(raw_version)
+        change_stock(item, actor_id=current_user.id,
+                     operation=operation, expected_version=expected_version,
+                     quantity=quantity,
+                     reason=request.form.get("reason", "Manual stock adjustment"))
         db.session.commit()
+    except (ValueError, InventoryError) as exc:
+        db.session.rollback()
+        flash(str(exc) if isinstance(exc, InventoryError) else
+              "Quantity must be a non-negative whole number.", "danger")
+    else:
         flash("Inventory quantity updated.", "success")
     return redirect(url_for("warehouses.detail", warehouse_id=item.warehouse_id))

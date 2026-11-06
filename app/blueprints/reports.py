@@ -50,8 +50,12 @@ def _parse_filters(args):
                 or not raw_driver.isdecimal() or int(raw_driver) <= 0):
             raise ReportFilterError("Invalid driver filter.")
         driver_id = int(raw_driver)
+    overdue = (args.get("overdue") or "").strip()
+    if overdue not in ("", "0", "1"):
+        raise ReportFilterError("Invalid overdue filter.")
     return {"from_date": from_date, "to_date": to_date,
-            "status": status or None, "driver_id": driver_id}
+            "status": status or None, "driver_id": driver_id,
+            "overdue": overdue == "1"}
 
 
 def _query(filters):

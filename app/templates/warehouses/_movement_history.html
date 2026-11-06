@@ -1,0 +1,28 @@
+<section class="card section-gap">
+  <h2>Inventory Movement History</h2>
+  <p class="muted">Opening balances, receipts, dispatches and adjustments. Times are UTC.</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Time (UTC)</th><th>SKU / Item</th><th>Type</th><th>Before</th><th>Change</th><th>After</th><th>Staff</th><th>Reason</th></tr></thead>
+      <tbody>{% for movement in movements.items %}
+        <tr>
+          <td>{{ movement.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td>{{ movement.item.sku }} / {{ movement.item.name }}</td>
+          <td>{{ movement.movement_type|capitalize }}</td>
+          <td>{{ movement.quantity_before }}</td>
+          <td>{{ '%+d'|format(movement.quantity_change) }}</td>
+          <td>{{ movement.quantity_after }}</td>
+          <td>{{ movement.actor.full_name if movement.actor else 'System (migration)' }}</td>
+          <td>{{ movement.reason }}</td>
+        </tr>
+      {% else %}<tr><td colspan="8" class="muted">No inventory movements yet.</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  {% if movements.pages > 1 %}
+  <nav class="pager" aria-label="Inventory history pages">
+    <span>Page {{ movements.page }} of {{ movements.pages }}</span>
+    {% if movements.has_prev %}<a href="{{ url_for('warehouses.detail', warehouse_id=warehouse.id, history_page=movements.prev_num) }}">Previous</a>{% endif %}
+    {% if movements.has_next %}<a href="{{ url_for('warehouses.detail', warehouse_id=warehouse.id, history_page=movements.next_num) }}">Next</a>{% endif %}
+  </nav>
+  {% endif %}
+</section>

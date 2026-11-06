@@ -41,7 +41,7 @@ def test_staff_can_manage_warehouse_inventory(app, client):
         item = db.session.scalar(db.select(InventoryItem))
         assert item.sku == "BOX-01" and item.needs_reorder
         item_id = item.id
-    client.post(f"/warehouses/inventory/{item_id}/adjust", data={"quantity": "20"})
+    client.post(f"/warehouses/inventory/{item_id}/adjust", data={"quantity": "20", "expected_version": "0"})
     with app.app_context():
         assert db.session.get(InventoryItem, item_id).quantity == 20
 

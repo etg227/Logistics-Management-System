@@ -5,13 +5,15 @@ Usage (from the repo root):
     .venv/Scripts/python.exe scripts/seed_demo.py                 # add anything missing
     .venv/Scripts/python.exe scripts/seed_demo.py --reset-passwords
 
-Safe to re-run: existing users are kept, existing demo shipments are not
-duplicated (it checks for the demo customers first).
+Safe to re-run: existing users and shipments are kept. Includes seven labelled
+report fixtures with dates relative to their first creation (UTC). Later runs
+do not move dates, reset statuses, or duplicate those fixtures.
 """
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,7 +22,7 @@ if str(ROOT) not in sys.path:
 
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
-from app.models import Customer, Shipment, User  # noqa: E402
+from app.models import Customer, Shipment, ShipmentEvent, User  # noqa: E402
 from app.models.shipment import (  # noqa: E402
     IN_TRANSIT, OUT_FOR_DELIVERY, PICKED_UP,
 )
@@ -108,6 +110,49 @@ def make_shipment(*, customer, actor, recipient, phone, destination, driver,
     return shipment
 
 
+def seed_report_shipments(actor, drivers, now=None):
+    """Add labelled report snapshots; preserve fixtures on subsequent runs."""
+    now = now or datetime.now(timezone.utc)
+    today = now.date()
+    customer = ensure_customer('DEMO Report Acceptance', '00000000',
+                               'DEMO warehouse, Kowloon', 'report-demo@example.com')
+    cases = [
+        ('LATE-A', 'assigned', -1, drivers[0], 0),
+        ('LATE-B', 'assigned', -2, drivers[1], 0),
+        ('OLD-LATE-A', 'assigned', -1, drivers[0], 7),
+        ('TODAY-A', 'assigned', 0, drivers[0], 0),
+        ('FUTURE', 'pending', 1, None, 0),
+        ('ON-TIME', 'delivered', 0, drivers[0], 0),
+        ('LATE-DONE', 'delivered', -1, drivers[1], 0),
+    ]
+    created = []
+    for suffix, status, offset, driver, age in cases:
+        recipient = f'DEMO {suffix}'
+        # Also adopt the already-created local acceptance fixtures without changing them.
+        existing = db.session.scalar(db.select(Shipment.id).where(
+            Shipment.customer_id == customer.id, Shipment.recipient_name == recipient))
+        if existing is not None:
+            continue
+        shipment = Shipment(
+            tracking_number=f'DEMO-RPT-{suffix}', customer_id=customer.id, created_by_id=actor.id,
+            driver_id=driver.id if driver else None, recipient_name=recipient,
+            recipient_phone='00000000', origin='DEMO Kowloon depot', destination='DEMO Central depot',
+            description='Synthetic report acceptance data', weight_kg=1, status=status,
+            created_at=now - timedelta(days=age), expected_delivery_date=today + timedelta(days=offset),
+            delivered_at=now if status == 'delivered' else None,
+            received_by='DEMO recipient' if status == 'delivered' else None,
+            delivery_attempts=1 if status == 'delivered' else 0,
+        )
+        db.session.add(shipment)
+        db.session.flush()
+        # These are synthetic snapshots, not reconstructed operational history.
+        db.session.add(ShipmentEvent(shipment_id=shipment.id, changed_by_id=actor.id,
+                                     status=status, note='DEMO report fixture; synthetic current state'))
+        created.append(shipment.tracking_number)
+    db.session.commit()
+    return created
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reset-passwords", action="store_true",
@@ -163,6 +208,8 @@ def main() -> None:
         )
         if pending is not None:
             created.append(pending.tracking_number)
+
+        created.extend(seed_report_shipments(staff, (driver, driver2)))
 
         for shipment in db.session.scalars(db.select(Shipment)).all():
             pass  # touch the session so relationships are available to the printout

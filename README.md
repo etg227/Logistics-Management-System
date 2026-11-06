@@ -49,13 +49,18 @@ flask --app run create-user --role admin
 Optional: load demo data so the pages are not empty while you click around.
 
 ```bash
-python scripts/seed_demo.py                  # three staff/driver accounts, eight shipments covering every status
+python scripts/seed_demo.py                  # three staff/driver accounts, 8 workflow + 7 report demo shipments
 python scripts/seed_demo.py --reset-passwords
 ```
 
-The seeded accounts use the password `demo12345`. The script never creates an
-admin account — use `create-user` above for that. It is safe to re-run: it only
-adds what is missing.
+New seeded accounts use the password `demo12345`. Existing passwords are kept
+unless `--reset-passwords` is supplied. The script never creates an admin account
+— use `create-user` above for that. It is safe to re-run: it only adds what is
+missing and keeps existing shipment dates, statuses and tracking numbers.
+
+Driver 1 is `driver@example.com` (Chan Tai Man), and Driver 2 is
+`driver2@example.com` (Leung Mei Mei).
+
 
 ### 4. Run the app
 

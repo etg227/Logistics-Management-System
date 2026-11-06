@@ -50,7 +50,7 @@
   <div class="app-main">
     <header class="app-mobile-header"><a class="product-brand" href="{{ url_for('main.dashboard') }}"><span class="brand-mark" aria-hidden="true">C</span> CargoFlow</a><form method="POST" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="mobile-signout">Sign out</button></form></header>
 {% else %}
-<header class="public-header"><a class="product-brand" href="{{ url_for('tracking.index') }}"><span class="brand-mark" aria-hidden="true">C</span> CargoFlow</a><nav aria-label="Public navigation"><a href="{{ url_for('tracking.index') }}">Track shipment</a><a href="{{ url_for('auth.login') }}">Employee sign in</a></nav></header>
+<header class="public-header"><a class="product-brand" href="{{ url_for('tracking.index') }}"><span class="brand-mark" aria-hidden="true">C</span> CargoFlow</a><nav aria-label="Public navigation"><a href="{{ url_for('tracking.index') }}">Track shipment</a><a href="{{ url_for('auth.login') }}">Sign in</a></nav></header>
 {% endif %}
 <main class="{{ 'app-content' if current_user.is_authenticated else 'public-content' }}" id="main-content">
   {% with messages = get_flashed_messages(with_categories=true) %}

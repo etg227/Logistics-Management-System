@@ -24,5 +24,5 @@
     {% if invoices_pagination.pages > 1 %}<nav class="pager" aria-label="Invoice pages"><span>Page {{ invoices_pagination.page }} of {{ invoices_pagination.pages }}</span>{% if invoices_pagination.has_prev %}<a href="{{ url_for('portal.index', shipments_page=shipments_pagination.page, invoices_page=invoices_pagination.prev_num) }}">Previous</a>{% endif %}{% if invoices_pagination.has_next %}<a href="{{ url_for('portal.index', shipments_page=shipments_pagination.page, invoices_page=invoices_pagination.next_num) }}">Next</a>{% endif %}</nav>{% endif %}
   </section>
 </div>
-<section class="card section-gap"><div class="panel-head"><h2>Recent updates</h2><a class="table-link" href="{{ url_for('notifications.index') }}">View all</a></div>{% for notification in notifications %}<p><strong>{{ notification.title }}</strong><br><span class="muted">{{ notification.message }}</span></p>{% else %}<p class="muted">No updates.</p>{% endfor %}</section>
+<section class="card section-gap"><div class="panel-head"><h2>Recent updates</h2><a class="table-link" href="{{ url_for('notifications.index') }}">View all</a></div>{% for notification in notifications %}<p><strong>{{ notification.title }}</strong><br><span class="muted">{{ notification.message_for(current_user) }}</span></p>{% else %}<p class="muted">No updates.</p>{% endfor %}</section>
 {% endblock %}

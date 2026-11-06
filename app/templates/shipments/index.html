@@ -30,6 +30,7 @@
     <div class="filter-field"><label for="from_date">Created From (UTC)</label><input id="from_date" name="from_date" type="date" class="form-control" value="{{ from_date }}"></div>
     <div class="filter-field"><label for="to_date">Created To (UTC)</label><input id="to_date" name="to_date" type="date" class="form-control" value="{{ to_date }}"></div>
     <div class="filter-field"><label for="sort">Sort</label><select id="sort" name="sort" class="form-control"><option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option><option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option></select></div>
+    <label><input type="checkbox" name="overdue" value="1" {% if overdue %}checked{% endif %}> Overdue only</label>
     <div class="shipment-filter-actions">
       <button type="submit" class="btn btn-primary">Filter</button>
       <a class="btn btn-outline" href="{{ url_for('shipments.index') }}">Clear</a>
@@ -43,7 +44,7 @@
           <td><span class="mono">{{ s.tracking_number }}</span></td>
           <td>{{ s.recipient_name }}</td>
           <td>{{ s.driver.full_name if s.driver else 'Unassigned' }}</td>
-          <td><span class="status-tag {% if s.status == 'delivery_failed' %}status-failed{% elif s.status == 'delivered' %}status-delivered{% endif %}">{{ s.status_label }}</span></td>
+          <td><span class="status-tag {% if s.status == 'delivery_failed' %}status-failed{% elif s.status == 'delivered' %}status-delivered{% endif %}">{{ s.status_label }}</span>{% if s.is_overdue %} <span class="status-tag status-failed">Overdue</span>{% endif %}</td>
           <td>{{ s.delivery_attempts or 0 }}</td>
           <td><a class="table-link" href="{{ url_for('shipments.detail', shipment_id=s.id) }}">View</a></td>
         </tr>
@@ -52,8 +53,8 @@
   </div>
   <div class="pager">
     <span class="muted">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</span>
-    {% if pagination.has_prev %}<a href="{{ url_for('shipments.index', page=pagination.prev_num, q=q, status=status, driver_id=driver_id, from_date=from_date, to_date=to_date, sort=sort) }}">&larr; Previous</a>{% endif %}
-    {% if pagination.has_next %}<a href="{{ url_for('shipments.index', page=pagination.next_num, q=q, status=status, driver_id=driver_id, from_date=from_date, to_date=to_date, sort=sort) }}">Next &rarr;</a>{% endif %}
+    {% if pagination.has_prev %}<a href="{{ url_for('shipments.index', page=pagination.prev_num, q=q, status=status, driver_id=driver_id, from_date=from_date, to_date=to_date, sort=sort, overdue=1 if overdue else None) }}">&larr; Previous</a>{% endif %}
+    {% if pagination.has_next %}<a href="{{ url_for('shipments.index', page=pagination.next_num, q=q, status=status, driver_id=driver_id, from_date=from_date, to_date=to_date, sort=sort, overdue=1 if overdue else None) }}">Next &rarr;</a>{% endif %}
   </div>
 </div>
 {% endblock %}
