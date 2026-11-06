@@ -6,7 +6,7 @@
   <form method="POST" novalidate>
     {{ form.hidden_tag() }}
     <h2>Recipient Details</h2>
-    <div class="shipment-form-grid">
+        <div class="shipment-form-grid">
       {% for field in [form.package_type, form.weight_kg, form.length_cm, form.width_cm, form.height_cm] %}
         <div class="form-group">
           {{ field.label(class='form-label') }}{{ field(class='form-control') }}
