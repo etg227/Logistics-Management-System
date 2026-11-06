@@ -30,6 +30,7 @@ class InventoryItem(db.Model):
     sku = db.Column(db.String(60), nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     reorder_level = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     unit = db.Column(db.String(30), nullable=False, default="units", server_default="units")
     updated_at = db.Column(db.DateTime(timezone=True), nullable=False,
