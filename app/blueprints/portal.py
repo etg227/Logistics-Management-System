@@ -14,7 +14,7 @@ portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
 @login_required
 @roles_required("customer")
 def index():
-    if current_user.customer_id is None:
+    if current_user.customer_id is None or not current_user.customer.active:
         abort(403)
     shipments_pagination = db.paginate(
         db.select(Shipment).where(Shipment.customer_id == current_user.customer_id)
@@ -43,11 +43,12 @@ def create_shipment_request():
     form = ShipmentForm()
     form._fields.pop('customer_id', None)
     if form.validate_on_submit():
-        create_shipment(
+        shipment = create_shipment(
             customer_id=current_user.customer_id,
             created_by_id=current_user.id,
             **extract_shipment_form_data(form)
         )
-        flash("Your shipment request has been submitted and is awaiting confirmation.", "success")
+        flash(f"Shipment {shipment.tracking_number} booked. "
+              "Our team will assign a driver shortly.", "success")
         return redirect(url_for("portal.index"))
     return render_template("portal/create_shipment.html", form=form)

@@ -57,8 +57,18 @@ class User(UserMixin, db.Model):
     notifications = db.relationship("Notification", back_populates="user",
                                     cascade="all, delete-orphan")
 
+    @property
+    def can_sign_in(self):
+        """Inactive users, and customer users whose company is deactivated, cannot sign in."""
+        if not self.is_active:
+            return False
+        if self.role == "customer":
+            return self.customer is not None and self.customer.active
+        return True
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
+        
 
     def check_password(self, password):
         return check_password_hash(

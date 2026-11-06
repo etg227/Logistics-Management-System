@@ -20,7 +20,9 @@
     <div class="workspace-label">WORKSPACE</div>
     <nav class="sidebar-nav" aria-label="Main navigation">
       <a class="nav-link {% if request.endpoint == 'main.dashboard' %}is-active{% endif %}" href="{{ url_for('main.dashboard') }}"><span class="nav-icon" aria-hidden="true">▦</span> Dashboard</a>
+      {% if current_user.role != 'customer' %}
       <a class="nav-link {% if request.blueprint == 'shipments' %}is-active{% endif %}" href="{{ url_for('shipments.index') }}"><span class="nav-icon" aria-hidden="true">▣</span> {{ 'My Deliveries' if current_user.role == 'driver' else 'Shipments' }}</a>
+      {% endif%}
       {% if current_user.role in ['admin', 'staff'] %}
         <a class="nav-link {% if request.blueprint == 'customers' %}is-active{% endif %}" href="{{ url_for('customers.index') }}"><span class="nav-icon" aria-hidden="true">♧</span> Customers</a>
         <a class="nav-link {% if request.blueprint == 'reports' %}is-active{% endif %}" href="{{ url_for('reports.index') }}"><span class="nav-icon" aria-hidden="true">▤</span> Reports</a>
