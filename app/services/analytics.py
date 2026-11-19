@@ -69,6 +69,11 @@ def summary_from_conditions(conditions=(), *, actor_id=None):
     delivered = counts[DELIVERED]
     returned = counts[RETURNED]
     completed = delivered + returned
+    
+    total_revenue = db.session.scalar(
+        db.select(func.sum(Shipment.shipping_cost))
+        .where(Shipment.status == DELIVERED, *conditions)
+    ) or 0.0
     return {
         **delivery_metrics(conditions),
         "total": sum(counts.values()),
@@ -83,6 +88,7 @@ def summary_from_conditions(conditions=(), *, actor_id=None):
         "completed": completed,
         "success_rate": round(delivered * 100 / completed, 1) if completed else None,
         "counts": counts,
+        "total_revenue": total_revenue,
     }
 
 

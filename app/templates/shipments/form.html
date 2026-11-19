@@ -40,4 +40,30 @@
     {{ form.submit(class='btn btn-primary') }}
   </form>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const weightInput = document.querySelector('input[name="weight_kg"]');
+    
+    if (weightInput) {
+        const priceDisplay = document.createElement('div');
+        priceDisplay.style.marginTop = '8px';
+        priceDisplay.style.fontWeight = 'bold';
+        priceDisplay.style.color = '#28a745';
+        priceDisplay.style.display = 'none'; 
+        
+        weightInput.parentNode.appendChild(priceDisplay);
+
+        weightInput.addEventListener("input", function() {
+            const weight = parseFloat(this.value);
+            if (!isNaN(weight) && weight > 0) {
+                const cost = 50 + (weight * 10);
+                priceDisplay.textContent = `Estimated shipping cost(Estimated Cost): $${cost.toFixed(2)}`;
+                priceDisplay.style.display = "block";
+            } else {
+                priceDisplay.style.display = "none";
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

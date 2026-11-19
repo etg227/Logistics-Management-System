@@ -12,9 +12,16 @@ from app.models.shipment import (
 from app.services.notifications import notify_shipment_event
 
 
+
 class WorkflowError(ValueError):
     """Requested operation violates shipment business rules."""
 
+def calculate_shipping_cost(weight_kg):
+    try:
+        weight = float(weight_kg)
+    except (ValueError, TypeError):
+        weight = 0.0
+    return 50.0 + (weight * 10.0)
 
 def _validate_optional_text(value, limit, name):
     value = (value or "").strip()
@@ -38,9 +45,15 @@ def _record_event(shipment, actor_id, status, note, location=""):
 
 def create_shipment(*, customer_id, created_by_id, **fields):
     tracking_number = f"CF-{datetime.now(timezone.utc):%Y%m%d}-{uuid4().hex[:12].upper()}"
+    
+    weight = fields.get('weight_kg', 0)
+    cost = calculate_shipping_cost(weight)
+    
     shipment = Shipment(
         tracking_number=tracking_number, customer_id=customer_id,
-        created_by_id=created_by_id, status=PENDING, **fields,
+        created_by_id=created_by_id, status=PENDING, 
+        shipping_cost=cost, 
+        **fields,
     )
     db.session.add(shipment)
     db.session.flush()
