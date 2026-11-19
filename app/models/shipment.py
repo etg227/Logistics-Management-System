@@ -49,6 +49,7 @@ class Shipment(db.Model):
     destination = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(300), nullable=True)
     weight_kg = db.Column(db.Float, nullable=False)
+    shipping_cost = db.Column(db.Float, nullable=False, default=0.0, server_default="0.0")
     package_type = db.Column(db.String(30), nullable=False, default="parcel", server_default="parcel")
     length_cm = db.Column(db.Float, nullable=True)
     width_cm = db.Column(db.Float, nullable=True)

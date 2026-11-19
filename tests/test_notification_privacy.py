@@ -57,7 +57,7 @@ def test_upgrade_from_legacy_schema_keeps_customer_notes_private(tmp_path):
         "WTF_CSRF_ENABLED": False,
     })
     with application.app_context():
-        upgrade(revision="a1b2c3d4e5f6")
+        upgrade()
         customer = Customer(name="Legacy", phone="123", address="Hub")
         db.session.add(customer)
         db.session.flush()
